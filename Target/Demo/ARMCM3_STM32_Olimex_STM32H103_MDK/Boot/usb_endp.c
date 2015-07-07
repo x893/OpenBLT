@@ -1,12 +1,12 @@
 /************************************************************************************//**
-* \file         Source\assert.c
-* \brief        Bootloader assertion module source file.
-* \ingroup      Core
+* \file         Demo\ARMCM3_STM32_Olimex_STM32H103_IAR\Boot\usb_endp.c
+* \brief        Bootloader USB device endpoint routines source file.
+* \ingroup      Boot_ARMCM3_STM32_Olimex_STM32H103_IAR
 * \internal
 *----------------------------------------------------------------------------------------
 *                          C O P Y R I G H T
 *----------------------------------------------------------------------------------------
-*   Copyright (c) 2011  by Feaser    http://www.feaser.com    All rights reserved
+*   Copyright (c) 2012  by Feaser    http://www.feaser.com    All rights reserved
 *
 *----------------------------------------------------------------------------------------
 *                            L I C E N S E
@@ -31,57 +31,66 @@
 * \endinternal
 ****************************************************************************************/
 
+
 /****************************************************************************************
 * Include files
 ****************************************************************************************/
-#include "boot.h"                                /* bootloader generic header          */
+#include "usb_lib.h"
+#include "usb_desc.h"
+#include "usb_mem.h"
+#include "usb_istr.h"
+#include "usb_pwr.h"
 
 
-#ifndef NDEBUG
 /****************************************************************************************
-* Local data declarations
+* External functions
 ****************************************************************************************/
-#if    (defined (__ICCARM__)) /*------------------ ICC Compiler -------------------*/
-	#pragma diag_suppress=Pe550
-#elif defined ( __CC_ARM   ) /*------------------RealView Compiler -----------------*/
-	#pragma push
-	#pragma diag_suppress 550
-#endif
-
-/** \brief Holds the filename in which the assertion occurred. */
-static volatile blt_char  *assert_failure_file;
-/** \brief Holds the linenumber where the assertion occurred. */
-static volatile blt_int32u assert_failure_line;
-
-#if    (defined (__ICCARM__)) /*------------------ ICC Compiler -------------------*/
-	#pragma diag_default=Pe550
-#elif defined ( __CC_ARM   ) /*------------------RealView Compiler -----------------*/
-	#pragma pop
-	#pragma diag_suppress 550
-#endif
+extern void UsbTransmitPipeBulkIN(void);
+extern void UsbReceivePipeBulkOUT(void);
 
 
 /************************************************************************************//**
-** \brief     Called when a runtime assertion failed. It stores information about where 
-**            the assertion occurred and halts the software program.
-** \param     file   Name of the source file where the assertion occurred.
-** \param     line   Linenumber in the source file where the assertion occurred.
-** \return    none
+** \brief     Endpoint 1 IN callback that gets called each time that data can be
+**            transmitted from the USB device to the host on this endpoint.
+** \return    none.
 **
 ****************************************************************************************/
-void AssertFailure(blt_char *file, blt_int32u line)
+void EP1_IN_Callback(void)
 {
-  /* store the file string and line number so that it can be read on a breakpoint*/
-  assert_failure_file = file;
-  assert_failure_line = line;
-  /* hang the software so that it requires a hard reset */
-  for(;;) 
-  { 
-    /* keep servicing the watchdog so that this one does not cause a reset */
-    CopService(); 
-  }
-} /*** end of AssertFailure ***/
-#endif /* !NDEBUG */
+  /* endpoint finished the previous transmission so see if more data is left */
+  UsbTransmitPipeBulkIN();
+} /*** end of EP1_IN_Callback ***/
 
 
-/*********************************** end of assert.c ***********************************/
+/************************************************************************************//**
+** \brief     Endpoint 1 OUT callback that gets called each time that data was
+**            received from the USB host on this endpoint.
+** \return    none.
+**
+****************************************************************************************/
+void EP1_OUT_Callback(void)
+{
+  /* read the data from the bulk OUT pipe */
+  UsbReceivePipeBulkOUT();
+} /*** end of EP1_OUT_Callback ***/
+
+
+/************************************************************************************//**
+** \brief     Start of frame callback that gets called each time a start of frame
+**            was received from the USB host, typically each millisecond. Can be
+**            used as a trigger to start a transmission to an IN endpoint.
+** \return    none.
+**
+****************************************************************************************/
+void SOF_Callback(void)
+{
+  if(bDeviceState == CONFIGURED)
+  {
+    /* Check the data to be sent through IN pipe */
+    UsbTransmitPipeBulkIN();
+  }  
+} /*** end of SOF_Callback ***/
+
+
+/*********************************** end of usb_endp.c *********************************/
+

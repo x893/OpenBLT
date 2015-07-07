@@ -30,3 +30,12 @@
 
 # Debug files
 *.dSYM/
+obj/
+build/
+*.uvgui.*
+*.uvguix.*
+*.uvopt
+*.uvoptx
+*.dep
+settings/
+ide/settings/

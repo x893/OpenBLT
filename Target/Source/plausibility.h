@@ -465,6 +465,14 @@
 #error "BOOT_NVM_CHECKSUM_HOOKS_ENABLE must be 0 or 1"
 #endif
 
+#ifndef BOOT_SIZE_KB
+	#define BOOT_SIZE_KB	(24)
+#endif
+#if (BOOT_SIZE_KB != 8) && (BOOT_SIZE_KB != 16) && (BOOT_SIZE_KB != 24)
+#error "BOOT_SIZE_KB must be 8, 16 or 24"
+#endif
+
+
 
 /****************************************************************************************
 *   W A T C H D O G   D R I V E R   C O N F I G U R A T I O N   C H E C K

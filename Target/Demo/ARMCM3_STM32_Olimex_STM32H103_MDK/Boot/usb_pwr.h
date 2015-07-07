@@ -1,12 +1,12 @@
 /************************************************************************************//**
-* \file         Source\assert.c
-* \brief        Bootloader assertion module source file.
-* \ingroup      Core
+* \file         Demo\ARMCM3_STM32_Olimex_STM32H103_IAR\Boot\usb_pwr.h
+* \brief        Bootloader USB device power management header file.
+* \ingroup      Boot_ARMCM3_STM32_Olimex_STM32H103_IAR
 * \internal
 *----------------------------------------------------------------------------------------
 *                          C O P Y R I G H T
 *----------------------------------------------------------------------------------------
-*   Copyright (c) 2011  by Feaser    http://www.feaser.com    All rights reserved
+*   Copyright (c) 2012  by Feaser    http://www.feaser.com    All rights reserved
 *
 *----------------------------------------------------------------------------------------
 *                            L I C E N S E
@@ -30,58 +30,56 @@
 * 
 * \endinternal
 ****************************************************************************************/
+#ifndef USB_PWR_H
+#define USB_PWR_H
+
 
 /****************************************************************************************
-* Include files
+* Type definitions
 ****************************************************************************************/
-#include "boot.h"                                /* bootloader generic header          */
-
-
-#ifndef NDEBUG
-/****************************************************************************************
-* Local data declarations
-****************************************************************************************/
-#if    (defined (__ICCARM__)) /*------------------ ICC Compiler -------------------*/
-	#pragma diag_suppress=Pe550
-#elif defined ( __CC_ARM   ) /*------------------RealView Compiler -----------------*/
-	#pragma push
-	#pragma diag_suppress 550
-#endif
-
-/** \brief Holds the filename in which the assertion occurred. */
-static volatile blt_char  *assert_failure_file;
-/** \brief Holds the linenumber where the assertion occurred. */
-static volatile blt_int32u assert_failure_line;
-
-#if    (defined (__ICCARM__)) /*------------------ ICC Compiler -------------------*/
-	#pragma diag_default=Pe550
-#elif defined ( __CC_ARM   ) /*------------------RealView Compiler -----------------*/
-	#pragma pop
-	#pragma diag_suppress 550
-#endif
-
-
-/************************************************************************************//**
-** \brief     Called when a runtime assertion failed. It stores information about where 
-**            the assertion occurred and halts the software program.
-** \param     file   Name of the source file where the assertion occurred.
-** \param     line   Linenumber in the source file where the assertion occurred.
-** \return    none
-**
-****************************************************************************************/
-void AssertFailure(blt_char *file, blt_int32u line)
+/** \brief Enumeration of the supported resume states. */
+typedef enum _RESUME_STATE
 {
-  /* store the file string and line number so that it can be read on a breakpoint*/
-  assert_failure_file = file;
-  assert_failure_line = line;
-  /* hang the software so that it requires a hard reset */
-  for(;;) 
-  { 
-    /* keep servicing the watchdog so that this one does not cause a reset */
-    CopService(); 
-  }
-} /*** end of AssertFailure ***/
-#endif /* !NDEBUG */
+  RESUME_EXTERNAL,
+  RESUME_INTERNAL,
+  RESUME_LATER,
+  RESUME_WAIT,
+  RESUME_START,
+  RESUME_ON,
+  RESUME_OFF,
+  RESUME_ESOF
+} RESUME_STATE;
+
+/** \brief Enumeration of the supported device states. */
+typedef enum _DEVICE_STATE
+{
+  UNCONNECTED,
+  ATTACHED,
+  POWERED,
+  SUSPENDED,
+  ADDRESSED,
+  CONFIGURED
+} DEVICE_STATE;
 
 
-/*********************************** end of assert.c ***********************************/
+/****************************************************************************************
+* Function prototypes
+****************************************************************************************/
+void Suspend(void);
+void Resume_Init(void);
+void Resume(RESUME_STATE eResumeSetVal);
+RESULT PowerOn(void);
+RESULT PowerOff(void);
+
+
+/****************************************************************************************
+* External data declarations
+****************************************************************************************/
+/* USB device status */
+extern volatile uint32_t bDeviceState; 
+/* true when suspend is possible */
+extern volatile bool fSuspendEnabled;  
+
+#endif  /* USB_PWR_H*/
+
+/*********************************** end of usb_pwr.h **********************************/
