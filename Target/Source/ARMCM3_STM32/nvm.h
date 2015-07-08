@@ -43,8 +43,8 @@
 * Function prototypes
 ****************************************************************************************/
 void     NvmInit(void);
-bool NvmWrite(blt_addr addr, uint32_t len, uint8_t *data);
-bool NvmErase(blt_addr addr, uint32_t len);
+bool NvmWrite(uint32_t addr, uint32_t len, uint8_t *data);
+bool NvmErase(uint32_t addr, uint32_t len);
 bool NvmVerifyChecksum(void);
 bool NvmDone(void);
 

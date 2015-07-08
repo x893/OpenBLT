@@ -60,7 +60,7 @@
 * Function prototypes
 ****************************************************************************************/
 #ifndef NDEBUG
-void AssertFailure(blt_char *file, blt_int32u line);
+void AssertFailure(const char *file, uint32_t line);
 #endif
 
 #endif /* ASSERT_H */

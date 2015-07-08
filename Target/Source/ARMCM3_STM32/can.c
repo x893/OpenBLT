@@ -237,20 +237,8 @@ bool CanTransmitPacket(uint8_t *data, uint8_t len)
 	can->sTxMailBox[0].TDTR = len;
 
 	/* store the message data bytes */
-	can->sTxMailBox[0].TDLR = *(((uint32_t *)data) + 0);
-	can->sTxMailBox[0].TDHR = *(((uint32_t *)data) + 1);
-	/*
-	can->sTxMailBox[0].TDLR = (((uint32_t)data[3] << 24) |
-								((uint32_t)data[2] << 16) |
-								((uint32_t)data[1] <<  8) |
-								((uint32_t)data[0])
-								);
-	can->sTxMailBox[0].TDHR = (((uint32_t)data[7] << 24) |
-								((uint32_t)data[6] << 16) |
-								((uint32_t)data[5] <<  8) |
-								((uint32_t)data[4])
-								);
-	*/
+	can->sTxMailBox[0].TDLR = *(((uint32_t *)(data + 0)));
+	can->sTxMailBox[0].TDHR = *(((uint32_t *)(data + 4)));
 
 	/* request the start of message transmission */
 	can->sTxMailBox[0].TIR |= CAN_TI0R_TXRQ;
@@ -289,22 +277,8 @@ bool CanReceivePacket(uint8_t *data)
 		if (rxMsgId == BOOT_COM_CAN_RX_MSG_ID)
 		{
 			result = true;
-			*(((uint32_t *)data) + 0) = can->sFIFOMailBox[0].RDLR;
-			*(((uint32_t *)data) + 1) = can->sFIFOMailBox[0].RDLR;
-			/*
-			uint32_t recv;
-			// store the received packet data
-			recv = can->sFIFOMailBox[0].RDLR;
-			data[0] = (uint8_t)0xFF & recv;
-			data[1] = (uint8_t)0xFF & (recv >> 8);
-			data[2] = (uint8_t)0xFF & (recv >> 16);
-			data[3] = (uint8_t)0xFF & (recv >> 24);
-			recv = can->sFIFOMailBox[0].RDHR;
-			data[4] = (uint8_t)0xFF & recv;
-			data[5] = (uint8_t)0xFF & (recv >> 8);
-			data[6] = (uint8_t)0xFF & (recv >> 16);
-			data[7] = (uint8_t)0xFF & (recv >> 24);
-			*/
+			*(((uint32_t *)(data + 0))) = (uint32_t)can->sFIFOMailBox[0].RDLR;
+			*(((uint32_t *)(data + 4))) = (uint32_t)can->sFIFOMailBox[0].RDHR;
 		}
 		/* release FIFO0 */
 		can->RF0R |= CAN_RF0R_RFOM0;

@@ -1,43 +1,12 @@
-/************************************************************************************//**
-* \file         Source\file.h
-* \brief        Bootloader file system interface header file.
-* \ingroup      Core
-* \internal
-*----------------------------------------------------------------------------------------
-*                          C O P Y R I G H T
-*----------------------------------------------------------------------------------------
-*   Copyright (c) 2013  by Feaser    http://www.feaser.com    All rights reserved
-*
-*----------------------------------------------------------------------------------------
-*                            L I C E N S E
-*----------------------------------------------------------------------------------------
-* This file is part of OpenBLT. OpenBLT is free software: you can redistribute it and/or
-* modify it under the terms of the GNU General Public License as published by the Free
-* Software Foundation, either version 3 of the License, or (at your option) any later
-* version.
-*
-* OpenBLT is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-* PURPOSE. See the GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License along with OpenBLT.
-* If not, see <http://www.gnu.org/licenses/>.
-*
-* A special exception to the GPL is included to allow you to distribute a combined work 
-* that includes OpenBLT without being obliged to provide the source code for any 
-* proprietary components. The exception text is included at the bottom of the license
-* file <license.html>.
-* 
-* \endinternal
-****************************************************************************************/
 #ifndef FILE_H
 #define FILE_H
 
 #if (BOOT_FILE_SYS_ENABLE > 0)
+
 /****************************************************************************************
 * Include files
 ****************************************************************************************/
-#include "ff.h"                                  /* FATFS file system library          */
+#include "ff.h"	/* FATFS file system library	*/
 
 
 /****************************************************************************************
@@ -72,21 +41,19 @@
 * Type definitions
 ****************************************************************************************/
 /** \brief Enumeration for the different S-record line types. */
-typedef enum
-{
-  LINE_TYPE_S1,                                  /**< 16-bit address line              */
-  LINE_TYPE_S2,                                  /**< 24-bit address line              */
-  LINE_TYPE_S3,                                  /**< 32-bit address line              */
-  LINE_TYPE_UNSUPPORTED                          /**< unsupported line                 */
-} tSrecLineType;
+typedef enum {
+	LINE_TYPE_S1,			/**< 16-bit address line	*/
+	LINE_TYPE_S2,			/**< 24-bit address line	*/
+	LINE_TYPE_S3,			/**< 32-bit address line	*/
+	LINE_TYPE_UNSUPPORTED	/**< unsupported line		*/
+} SrecLineType_t;
 
 /** \brief Structure type for grouping the parsing results of an S-record line. */
-typedef struct
-{
-  blt_char  line[MAX_CHARS_PER_LINE];            /**< string buffer for the line chars */
-  blt_int8u data[MAX_DATA_BYTES_PER_LINE];       /**< array for S1, S2 or S3 data bytes*/
-  blt_addr  address;                             /**< address on S1, S2 or S3 line     */
-} tSrecLineParseObject;
+typedef struct {
+	char line[MAX_CHARS_PER_LINE];			/**< string buffer for the line chars */
+	uint8_t data[MAX_DATA_BYTES_PER_LINE];	/**< array for S1, S2 or S3 data bytes*/
+	uint32_t address;						/**< address on S1, S2 or S3 line     */
+} SrecLineParseObject_t;
 
 
 /****************************************************************************************
@@ -94,15 +61,46 @@ typedef struct
 ****************************************************************************************/
 void          FileInit(void);
 void          FileTask(void);
-blt_bool      FileIsIdle(void);
-blt_bool      FileHandleFirmwareUpdateRequest(void);
+bool      FileIsIdle(void);
+bool      FileHandleFirmwareUpdateRequest(void);
 /* functions for reading data from a Motorola S-record file. */
-tSrecLineType FileSrecGetLineType(const blt_char *line);
-blt_bool      FileSrecVerifyChecksum(const blt_char *line);
-blt_int16s    FileSrecParseLine(const blt_char *line, blt_addr *address, blt_int8u *data);
+SrecLineType_t FileSrecGetLineType(const char *line);
+bool      FileSrecVerifyChecksum(const char *line);
+int16_t    FileSrecParseLine(const char *line, uint32_t *address, uint8_t *data);
 
 #endif /* BOOT_FILE_SYS_ENABLE > 0 */
 
-
 #endif /* FILE_H */
 /*********************************** end of file.h *************************************/
+/************************************************************************************//**
+* \file         Source\file.h
+* \brief        Bootloader file system interface header file.
+* \ingroup      Core
+* \internal
+*----------------------------------------------------------------------------------------
+*                          C O P Y R I G H T
+*----------------------------------------------------------------------------------------
+*   Copyright (c) 2013  by Feaser    http://www.feaser.com    All rights reserved
+*
+*----------------------------------------------------------------------------------------
+*                            L I C E N S E
+*----------------------------------------------------------------------------------------
+* This file is part of OpenBLT. OpenBLT is free software: you can redistribute it and/or
+* modify it under the terms of the GNU General Public License as published by the Free
+* Software Foundation, either version 3 of the License, or (at your option) any later
+* version.
+*
+* OpenBLT is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+* PURPOSE. See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with OpenBLT.
+* If not, see <http://www.gnu.org/licenses/>.
+*
+* A special exception to the GPL is included to allow you to distribute a combined work 
+* that includes OpenBLT without being obliged to provide the source code for any 
+* proprietary components. The exception text is included at the bottom of the license
+* file <license.html>.
+* 
+* \endinternal
+****************************************************************************************/

@@ -11,7 +11,7 @@
 /** \brief Standard size of a flash block for writing. */
 #define FLASH_WRITE_BLOCK_SIZE		(512)
 /** \brief Total numbers of sectors in array flashLayout[]. */
-#define FLASH_TOTAL_SECTORS			(sizeof(flashLayout)/sizeof(flashLayout[0]))
+#define FLASH_TOTAL_SECTORS			(sizeof(flashLayout) / sizeof(flashLayout[0]))
 
 #if (BOOT_NVM_SIZE_KB > 128)
 	/** \brief Number of bytes to erase per erase operation. */
@@ -43,10 +43,10 @@
 ****************************************************************************************/
 /** \brief Flash sector descriptor type. */
 typedef struct {
-	blt_addr   sector_start;	/**< sector start address	*/
-	uint32_t sector_size;		/**< sector size in bytes	*/
-	uint8_t  sector_num;		/**< sector number			*/
-} tFlashSector;
+	uint32_t sector_start;	/**< sector start address	*/
+	uint32_t sector_size;	/**< sector size in bytes	*/
+	uint8_t  sector_num;	/**< sector number			*/
+} FlashSector_t;
 
 /** \brief    Structure type for grouping flash block information.
  *  \details  Programming is done per block of max FLASH_WRITE_BLOCK_SIZE. for this a 
@@ -56,7 +56,7 @@ typedef struct {
  *            block. The .base_addr must be a multiple of FLASH_WRITE_BLOCK_SIZE.
  */
 typedef struct {
-	blt_addr  base_addr;
+	uint32_t  base_addr;
 	uint8_t data[FLASH_WRITE_BLOCK_SIZE];
 } tFlashBlockInfo;
 
@@ -77,16 +77,16 @@ typedef struct {
 /****************************************************************************************
 * Function prototypes
 ****************************************************************************************/
-static bool  FlashInitBlock(tFlashBlockInfo *block, blt_addr address);
-static tFlashBlockInfo *FlashSwitchBlock(tFlashBlockInfo *block, blt_addr base_addr);
-static bool  FlashAddToBlock(tFlashBlockInfo *block, blt_addr address, uint8_t *data, uint32_t len);
+static bool  FlashInitBlock(tFlashBlockInfo *block, uint32_t address);
+static tFlashBlockInfo *FlashSwitchBlock(tFlashBlockInfo *block, uint32_t base_addr);
+static bool  FlashAddToBlock(tFlashBlockInfo *block, uint32_t address, uint8_t *data, uint32_t len);
 static bool  FlashWriteBlock(tFlashBlockInfo *block);
 static bool  FlashEraseSectors(uint8_t first_sector, uint8_t last_sector);
 static void      FlashUnlock(void);
 static void      FlashLock(void);
-static uint8_t FlashGetSector(blt_addr address);
-static blt_addr  FlashGetSectorBaseAddr(uint8_t sector);
-static blt_addr  FlashGetSectorSize(uint8_t sector);
+static uint8_t FlashGetSector(uint32_t address);
+static uint32_t  FlashGetSectorBaseAddr(uint8_t sector);
+static uint32_t  FlashGetSectorSize(uint8_t sector);
 
 
 /****************************************************************************************
@@ -102,7 +102,7 @@ static blt_addr  FlashGetSectorSize(uint8_t sector);
  *           the flash. This can still be done in combination with macro 
  *           FLASH_ERASE_BLOCK_SIZE.
  */
-static const tFlashSector flashLayout[] =
+static const FlashSector_t flashLayout[] =
 {
 	/* space is reserved for a bootloader configuration with all supported communication
 	 * interfaces enabled. when for example only UART is needed, than the space required
@@ -214,9 +214,9 @@ void FlashInit(void)
 ** \return	true if successful, false otherwise. 
 **
 ****************************************************************************************/
-bool FlashWrite(blt_addr addr, uint32_t len, uint8_t *data)
+bool FlashWrite(uint32_t addr, uint32_t len, uint8_t *data)
 {
-	blt_addr base_addr;
+	uint32_t base_addr;
 
 	/* make sure the addresses are within the flash device */
 	if ( (FlashGetSector(addr) == FLASH_INVALID_SECTOR)
@@ -247,7 +247,7 @@ bool FlashWrite(blt_addr addr, uint32_t len, uint8_t *data)
 ** \return	true if successful, false otherwise. 
 **
 ****************************************************************************************/
-bool FlashErase(blt_addr addr, uint32_t len)
+bool FlashErase(uint32_t addr, uint32_t len)
 {
 	uint8_t first_sector;
 	uint8_t last_sector;
@@ -323,7 +323,7 @@ bool FlashWriteChecksum(void)
 	/* write the checksum */
 	return FlashWrite(
 		flashLayout[0].sector_start+FLASH_VECTOR_TABLE_CS_OFFSET,
-		sizeof(blt_addr),
+		sizeof(uint32_t),
 		(uint8_t*)&signature_checksum
 		);
 } /*** end of FlashWriteChecksum ***/
@@ -340,7 +340,7 @@ bool FlashVerifyChecksum(void)
 	uint32_t signature_checksum = 0;
 
 	/* verify the checksum based on how it was written by CpuWriteChecksum() */
-	signature_checksum += *((uint32_t *)(flashLayout[0].sector_start));
+	signature_checksum += *((uint32_t *)(flashLayout[0].sector_start + 0x00));
 	signature_checksum += *((uint32_t *)(flashLayout[0].sector_start + 0x04));
 	signature_checksum += *((uint32_t *)(flashLayout[0].sector_start + 0x08));
 	signature_checksum += *((uint32_t *)(flashLayout[0].sector_start + 0x0C));
@@ -348,14 +348,12 @@ bool FlashVerifyChecksum(void)
 	signature_checksum += *((uint32_t *)(flashLayout[0].sector_start + 0x14));
 	signature_checksum += *((uint32_t *)(flashLayout[0].sector_start + 0x18));
 	signature_checksum += *((uint32_t *)(flashLayout[0].sector_start + FLASH_VECTOR_TABLE_CS_OFFSET));
+
 	/* sum should add up to an unsigned 32-bit value of 0 */
 	if (signature_checksum == 0)
-	{
-		/* checksum okay */
-		return true;
-	}
-	/* checksum incorrect */
-	return false;
+		return true;	/* checksum okay */
+
+	return false;		/* checksum incorrect */
 } /*** end of FlashVerifyChecksum ***/
 
 
@@ -368,22 +366,17 @@ bool FlashVerifyChecksum(void)
 bool FlashDone(void)
 {
 	/* check if there is still data waiting to be programmed in the boot block */
-	if (bootBlockInfo.base_addr != FLASH_INVALID_ADDRESS)
-	{
-		if (FlashWriteBlock(&bootBlockInfo) == false)
-		{
-			return false;
-		}
-	}
+	if (bootBlockInfo.base_addr != FLASH_INVALID_ADDRESS
+	&&	(! FlashWriteBlock(&bootBlockInfo))
+		)
+		return false;
 
 	/* check if there is still data waiting to be programmed */
-	if (blockInfo.base_addr != FLASH_INVALID_ADDRESS)
-	{
-		if (FlashWriteBlock(&blockInfo) == false)
-		{
-			return false;
-		}
-	}
+	if (blockInfo.base_addr != FLASH_INVALID_ADDRESS
+	&&	(! FlashWriteBlock(&blockInfo))
+		)
+		return false;
+
 	/* still here so all is okay */  
 	return true;
 } /*** end of FlashDone ***/
@@ -395,7 +388,7 @@ bool FlashDone(void)
 ** \return	Base address.
 **
 ****************************************************************************************/
-blt_addr FlashGetUserProgBaseAddress(void)
+uint32_t FlashGetUserProgBaseAddress(void)
 {
 	return flashLayout[0].sector_start;
 } /*** end of FlashGetUserProgBaseAddress ***/
@@ -409,7 +402,7 @@ blt_addr FlashGetUserProgBaseAddress(void)
 ** \return	true if successful, false otherwise. 
 **
 ****************************************************************************************/
-static bool FlashInitBlock(tFlashBlockInfo *block, blt_addr address)
+static bool FlashInitBlock(tFlashBlockInfo *block, uint32_t address)
 {
 	/* check address alignment */  
 	if ((address % FLASH_WRITE_BLOCK_SIZE) != 0)
@@ -424,7 +417,7 @@ static bool FlashInitBlock(tFlashBlockInfo *block, blt_addr address)
 	}
 	/* set the base address and copies the current data from flash */  
 	block->base_addr = address;  
-	CpuMemCopy((blt_addr)block->data, address, FLASH_WRITE_BLOCK_SIZE);
+	CpuMemCopy((uint32_t)block->data, address, FLASH_WRITE_BLOCK_SIZE);
 	return true;
 } /*** end of FlashInitBlock ***/
 
@@ -438,7 +431,7 @@ static bool FlashInitBlock(tFlashBlockInfo *block, blt_addr address)
 **			pointer in case of error.
 **
 ****************************************************************************************/
-static tFlashBlockInfo *FlashSwitchBlock(tFlashBlockInfo *block, blt_addr base_addr)
+static tFlashBlockInfo *FlashSwitchBlock(tFlashBlockInfo *block, uint32_t base_addr)
 {
 	/* check if a switch needs to be made away from the boot block. in this case the boot
 	 * block shouldn't be written yet, because this is done at the end of the programming
@@ -490,9 +483,9 @@ static tFlashBlockInfo *FlashSwitchBlock(tFlashBlockInfo *block, blt_addr base_a
 ** \return	true if successful, false otherwise.
 **
 ****************************************************************************************/
-static bool FlashAddToBlock(tFlashBlockInfo *block, blt_addr address, uint8_t *data, uint32_t len)
+static bool FlashAddToBlock(tFlashBlockInfo *block, uint32_t address, uint8_t *data, uint32_t len)
 {
-	blt_addr   current_base_addr;
+	uint32_t   current_base_addr;
 	uint8_t  *dst;
 	uint8_t  *src;
   
@@ -528,7 +521,7 @@ static bool FlashAddToBlock(tFlashBlockInfo *block, blt_addr address, uint8_t *d
 		/* keep the watchdog happy */
 		CopService();
 		/* buffer overflow? */
-		if ((blt_addr)(dst-&(block->data[0])) >= FLASH_WRITE_BLOCK_SIZE)
+		if ((uint32_t)(dst-&(block->data[0])) >= FLASH_WRITE_BLOCK_SIZE)
 		{
 			/* need to switch to a new block, so program the current one and init the next */
 			block = FlashSwitchBlock(block, current_base_addr+FLASH_WRITE_BLOCK_SIZE);
@@ -563,7 +556,7 @@ static bool FlashWriteBlock(tFlashBlockInfo *block)
 {
 	uint8_t  sector_num;
 	bool   result = true;
-	blt_addr   prog_addr;
+	uint32_t   prog_addr;
 	uint32_t prog_data;
 	uint32_t word_cnt;
 
@@ -633,8 +626,8 @@ static bool FlashEraseSectors(uint8_t first_sector, uint8_t last_sector)
 {
 	uint16_t nr_of_blocks;
 	uint16_t block_cnt;
-	blt_addr   start_addr;
-	blt_addr   end_addr;
+	uint32_t   start_addr;
+	uint32_t   end_addr;
 
 	/* validate the sector numbers */
 	if (first_sector > last_sector)
@@ -723,7 +716,7 @@ static void FlashLock(void)
 ** \return	Flash sector number or FLASH_INVALID_SECTOR.
 **
 ****************************************************************************************/
-static uint8_t FlashGetSector(blt_addr address)
+static uint8_t FlashGetSector(uint32_t address)
 {
 	uint8_t sectorIdx;
   
@@ -752,7 +745,7 @@ static uint8_t FlashGetSector(blt_addr address)
 ** \return	Flash sector base address or FLASH_INVALID_ADDRESS.
 **
 ****************************************************************************************/
-static blt_addr FlashGetSectorBaseAddr(uint8_t sector)
+static uint32_t FlashGetSectorBaseAddr(uint8_t sector)
 {
 	uint8_t sectorIdx;
 
@@ -777,7 +770,7 @@ static blt_addr FlashGetSectorBaseAddr(uint8_t sector)
 ** \return	Flash sector size or 0.
 **
 ****************************************************************************************/
-static blt_addr FlashGetSectorSize(uint8_t sector)
+static uint32_t FlashGetSectorSize(uint8_t sector)
 {
 	uint8_t sectorIdx;
 

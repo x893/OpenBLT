@@ -14,9 +14,9 @@
 #endif
 
 /** \brief Holds the filename in which the assertion occurred. */
-static volatile blt_char  *assert_failure_file;
+static volatile const char  *assert_failure_file;
 /** \brief Holds the linenumber where the assertion occurred. */
-static volatile blt_int32u assert_failure_line;
+static volatile uint32_t assert_failure_line;
 
 #if    (defined (__ICCARM__)) /*------------------ ICC Compiler -------------------*/
 	#pragma diag_default=Pe550
@@ -34,7 +34,7 @@ static volatile blt_int32u assert_failure_line;
 ** \return	none
 **
 ****************************************************************************************/
-void AssertFailure(blt_char *file, blt_int32u line)
+void AssertFailure(const char *file, uint32_t line)
 {
 	/* store the file string and line number so that it can be read on a breakpoint*/
 	assert_failure_file = file;

@@ -49,7 +49,7 @@
 	#define BOOT_COM_CAN_BAUDRATE			250000	/* CAN speed 250 000 bps	*/
 	#define BOOT_COM_CAN_TX_MSG_ID			0x700
 	#define BOOT_COM_CAN_TX_MAX_DATA		8
-	#define BOOT_COM_CAN_RX_MSG_ID			0x321
+	#define BOOT_COM_CAN_RX_MSG_ID			0x700
 	#define BOOT_COM_CAN_RX_MAX_DATA		8
 
 #define BOOT_COM_UART_ENABLE			(0)

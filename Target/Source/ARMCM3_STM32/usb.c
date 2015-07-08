@@ -23,16 +23,15 @@
 * Type definitions
 ****************************************************************************************/
 /** \brief Structure type for fifo control. */
-typedef struct t_fifo_ctrl
-{
-	uint8_t	*startptr;	/**< pointer to start of buffer     */
-	uint8_t	*endptr;	/**< pointer to end of buffer       */
-	uint8_t	*readptr;	/**< pointer to next read location  */
-	uint8_t	*writeptr;	/**< pointer to next free location  */
-	uint8_t	length;		/**< number of buffer elements      */
-	uint8_t	entries;	/**< # of full buffer elements      */
-	uint8_t	handle;		/**< handle of the buffer           */ 
-	struct t_fifo_ctrl *fifoctrlptr;	/**< pointer to free buffer control */
+typedef struct t_fifo_ctrl {
+	uint8_t *startptr;	/**< pointer to start of buffer     */
+	uint8_t *endptr;	/**< pointer to end of buffer       */
+	uint8_t *readptr;	/**< pointer to next read location  */
+	uint8_t *writeptr;	/**< pointer to next free location  */
+	uint8_t length;		/**< number of buffer elements      */
+	uint8_t entries;	/**< # of full buffer elements      */
+	uint8_t handle;		/**< handle of the buffer           */ 
+	struct  t_fifo_ctrl	*fifoctrlptr;	/**< pointer to free buffer control */
 } tFifoCtrl;
 
 /** \brief Structure type for a fifo pipe. */

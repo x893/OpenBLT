@@ -367,7 +367,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F10X_MD NDEBUG</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\..\..\Source;..\..\..\..\Source\ARMCM3_STM32;..;..\lib\USB_FS_DEVICE\inc</IncludePath>
+              <IncludePath>..;..\lib\USB_FS_DEVICE\inc;..\..\..\..\Source;..\..\..\..\Source\ARMCM3_STM32;..\lib\fatfs;..\..\..\..\Source\third_party\fatfs\src</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>

@@ -6,8 +6,8 @@
 ****************************************************************************************/
 #if (BOOT_NVM_HOOKS_ENABLE > 0)
 	extern void      NvmInitHook(void);
-	extern uint8_t NvmWriteHook(blt_addr addr, uint32_t len, uint8_t *data);
-	extern uint8_t NvmEraseHook(blt_addr addr, uint32_t len);
+	extern uint8_t NvmWriteHook(uint32_t addr, uint32_t len, uint8_t *data);
+	extern uint8_t NvmEraseHook(uint32_t addr, uint32_t len);
 	extern bool  NvmDoneHook(void);
 #endif
 
@@ -44,7 +44,7 @@ void NvmInit(void)
 ** \return	true if successful, false otherwise.
 **
 ****************************************************************************************/
-bool NvmWrite(blt_addr addr, uint32_t len, uint8_t *data)
+bool NvmWrite(uint32_t addr, uint32_t len, uint8_t *data)
 {
 #if (BOOT_NVM_HOOKS_ENABLE > 0)
 	uint8_t result = BLT_NVM_NOT_IN_RANGE;
@@ -85,7 +85,7 @@ bool NvmWrite(blt_addr addr, uint32_t len, uint8_t *data)
 ** \return	true if successful, false otherwise.
 **
 ****************************************************************************************/
-bool NvmErase(blt_addr addr, uint32_t len)
+bool NvmErase(uint32_t addr, uint32_t len)
 {
 #if (BOOT_NVM_HOOKS_ENABLE > 0)
 	uint8_t result = BLT_NVM_NOT_IN_RANGE;

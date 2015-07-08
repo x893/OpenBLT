@@ -1,17 +1,9 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-
-/****************************************************************************************
-* Type definitions
-****************************************************************************************/
-#ifndef NULL
-	#define NULL ((void *)0)
-#endif
-
-typedef unsigned long   blt_addr;		/**<  memory address type        */
 
 #endif /* TYPES_H */
 

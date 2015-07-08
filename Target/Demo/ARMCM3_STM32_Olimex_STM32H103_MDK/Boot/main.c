@@ -10,6 +10,7 @@ static void LEDon(void);
 static void LEDoff(void);
 
 const uint8_t CAN_BOOT_PROMPT[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xAA, 0x55};
+
 /************************************************************************************//**
 ** \brief	This is the entry point for the bootloader application and is called 
 **            by the reset interrupt vector after the C-startup routines executed.
@@ -83,7 +84,7 @@ static void Init(void)
 	/* check if time out was reached */
 	if ((rcc->CR & RCC_CR_HSERDY) == RESET)
 	{	/* cannot continue when HSE is not ready */
-		ASSERT_RT(BLT_FALSE);
+		ASSERT_RT(false);
 	}
 	/* enable flash prefetch buffer */
 	FLASH->ACR |= FLASH_ACR_PRFTBE;

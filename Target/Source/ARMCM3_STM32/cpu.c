@@ -5,7 +5,7 @@
 * Macro definitions
 ****************************************************************************************/
 /** \brief Pointer to the user program's reset vector. */
-#define CPU_USER_PROGRAM_STARTADDR_PTR    ((blt_addr)(FlashGetUserProgBaseAddress() + 0x00000004))
+#define CPU_USER_PROGRAM_STARTADDR_PTR    ((uint32_t)(FlashGetUserProgBaseAddress() + 0x00000004))
 /** \brief Pointer to the user program's vector table. */
 #define CPU_USER_PROGRAM_VECTABLE_OFFSET  ((uint32_t)FlashGetUserProgBaseAddress())
 
@@ -70,7 +70,7 @@ void CpuStartUserProgram(void)
 	 * the 2nd entry in the user program's vector table. this address points to the
 	 * user program's reset handler.
 	 */
-	pProgResetHandler = (void(*)(void))(*((blt_addr*)CPU_USER_PROGRAM_STARTADDR_PTR));
+	pProgResetHandler = (void(*)(void))(*((uint32_t*)CPU_USER_PROGRAM_STARTADDR_PTR));
 	/* start the user program by activating its reset interrupt service routine */
 	pProgResetHandler();
 } /*** end of CpuStartUserProgram ***/
@@ -84,7 +84,7 @@ void CpuStartUserProgram(void)
 ** \return	none.
 **
 ****************************************************************************************/
-void CpuMemCopy(blt_addr dest, blt_addr src, uint16_t len)
+void CpuMemCopy(uint32_t dest, uint32_t src, uint16_t len)
 {
 	uint8_t *from, *to;
 

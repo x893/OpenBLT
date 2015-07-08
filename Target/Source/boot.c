@@ -33,10 +33,10 @@ void BootInit(void)
 ****************************************************************************************/
 void BootTask(void)
 {
-	/* service the watchdog */
-	CopService();
-	/* update the millisecond timer */
-	TimerUpdate();
+
+	CopService();	/* service the watchdog */
+	TimerUpdate();	/* update the millisecond timer */
+
 #if (BOOT_FILE_SYS_ENABLE > 0)
 	/* call worker task for updating firmware from locally attached file storage */
 	FileTask();

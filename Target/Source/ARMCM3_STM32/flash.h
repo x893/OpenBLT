@@ -37,12 +37,12 @@
 * Function prototypes
 ****************************************************************************************/
 void     FlashInit(void);
-bool FlashWrite(blt_addr addr, uint32_t len, uint8_t *data);
-bool FlashErase(blt_addr addr, uint32_t len);
+bool FlashWrite(uint32_t addr, uint32_t len, uint8_t *data);
+bool FlashErase(uint32_t addr, uint32_t len);
 bool FlashWriteChecksum(void);
 bool FlashVerifyChecksum(void);
 bool FlashDone(void);
-blt_addr FlashGetUserProgBaseAddress(void);
+uint32_t FlashGetUserProgBaseAddress(void);
 
 
 #endif /* FLASH_H */
