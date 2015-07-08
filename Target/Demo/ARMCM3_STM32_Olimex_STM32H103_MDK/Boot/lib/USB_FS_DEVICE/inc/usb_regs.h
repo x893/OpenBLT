@@ -540,10 +540,11 @@ enum EP_BUF_NUM
 * Output         : None.
 * Return         : None.
 *******************************************************************************/
-#define _SetEPDblBuffAddr(bEpNum,wBuf0Addr,wBuf1Addr) { \
-    _SetEPDblBuf0Addr(bEpNum, wBuf0Addr);\
-    _SetEPDblBuf1Addr(bEpNum, wBuf1Addr);\
-  } /* _SetEPDblBuffAddr */
+#define _SetEPDblBuffAddr(bEpNum,wBuf0Addr,wBuf1Addr)	\
+	{											\
+		_SetEPDblBuf0Addr(bEpNum, wBuf0Addr);	\
+		_SetEPDblBuf1Addr(bEpNum, wBuf1Addr);	\
+	} /* _SetEPDblBuffAddr */
 
 /*******************************************************************************
 * Macro Name     : GetEPDblBuf0Addr / GetEPDblBuf1Addr.
@@ -565,28 +566,31 @@ enum EP_BUF_NUM
 * Output         : None.
 * Return         : None.
 *******************************************************************************/
-#define _SetEPDblBuf0Count(bEpNum, bDir, wCount)  { \
-    if (bDir == EP_DBUF_OUT)\
-      /* OUT endpoint */ \
-    {_SetEPRxDblBuf0Count(bEpNum,wCount);} \
-    else if (bDir == EP_DBUF_IN)\
-      /* IN endpoint */ \
-      *_pEPTxCount(bEpNum) = (uint32_t)wCount;  \
-  } /* SetEPDblBuf0Count*/
+#define _SetEPDblBuf0Count(bEpNum, bDir, wCount)			\
+	{														\
+		if (bDir == EP_DBUF_OUT)							\
+			/* OUT endpoint */								\
+		{	_SetEPRxDblBuf0Count(bEpNum,wCount);		}	\
+		else if (bDir == EP_DBUF_IN)						\
+			/* IN endpoint */								\
+		{	*_pEPTxCount(bEpNum) = (uint32_t)wCount;	}	\
+	} /* SetEPDblBuf0Count*/
 
-#define _SetEPDblBuf1Count(bEpNum, bDir, wCount)  { \
-    if (bDir == EP_DBUF_OUT)\
-      /* OUT endpoint */ \
-    {_SetEPRxCount(bEpNum,wCount);}\
-    else if (bDir == EP_DBUF_IN)\
-      /* IN endpoint */\
-      *_pEPRxCount(bEpNum) = (uint32_t)wCount; \
-  } /* SetEPDblBuf1Count */
+#define _SetEPDblBuf1Count(bEpNum, bDir, wCount)			\
+	{														\
+		if (bDir == EP_DBUF_OUT)							\
+			/* OUT endpoint */								\
+		{	_SetEPRxCount(bEpNum,wCount);				}	\
+		else if (bDir == EP_DBUF_IN)						\
+			/* IN endpoint */								\
+			*_pEPRxCount(bEpNum) = (uint32_t)wCount;		\
+	} /* SetEPDblBuf1Count */
 
-#define _SetEPDblBuffCount(bEpNum, bDir, wCount) {\
-    _SetEPDblBuf0Count(bEpNum, bDir, wCount); \
-    _SetEPDblBuf1Count(bEpNum, bDir, wCount); \
-  } /* _SetEPDblBuffCount  */
+#define _SetEPDblBuffCount(bEpNum, bDir, wCount)			\
+	{														\
+		_SetEPDblBuf0Count(bEpNum, bDir, wCount);			\
+		_SetEPDblBuf1Count(bEpNum, bDir, wCount);			\
+	} /* _SetEPDblBuffCount  */
 
 /*******************************************************************************
 * Macro Name     : GetEPDblBuf0Count / GetEPDblBuf1Count.

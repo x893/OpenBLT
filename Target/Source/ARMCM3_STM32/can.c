@@ -44,26 +44,26 @@ typedef struct t_can_bus_bitrate
  *           a sample point between 68..78%.
  */
 static const tCanBusTiming canTiming[] =
-{                       /*  TQ | TSEG1 | TSEG2 | SP  */
-                        /* ------------------------- */
-    {  5, 2 },          /*   8 |   5   |   2   | 75% */
-    {  6, 2 },          /*   9 |   6   |   2   | 78% */
-    {  6, 3 },          /*  10 |   6   |   3   | 70% */
-    {  7, 3 },          /*  11 |   7   |   3   | 73% */
-    {  8, 3 },          /*  12 |   8   |   3   | 75% */
-    {  9, 3 },          /*  13 |   9   |   3   | 77% */
-    {  9, 4 },          /*  14 |   9   |   4   | 71% */
-    { 10, 4 },          /*  15 |  10   |   4   | 73% */
-    { 11, 4 },          /*  16 |  11   |   4   | 75% */
-    { 12, 4 },          /*  17 |  12   |   4   | 76% */
-    { 12, 5 },          /*  18 |  12   |   5   | 72% */
-    { 13, 5 },          /*  19 |  13   |   5   | 74% */
-    { 14, 5 },          /*  20 |  14   |   5   | 75% */
-    { 15, 5 },          /*  21 |  15   |   5   | 76% */
-    { 15, 6 },          /*  22 |  15   |   6   | 73% */
-    { 16, 6 },          /*  23 |  16   |   6   | 74% */
-    { 16, 7 },          /*  24 |  16   |   7   | 71% */
-    { 16, 8 }           /*  25 |  16   |   8   | 68% */
+{						/*  TQ | TSEG1 | TSEG2 | SP  */
+						/* ------------------------- */
+	{  5, 2 },	/*   8 |   5   |   2   | 75% */
+	{  6, 2 },	/*   9 |   6   |   2   | 78% */
+	{  6, 3 },	/*  10 |   6   |   3   | 70% */
+	{  7, 3 },	/*  11 |   7   |   3   | 73% */
+	{  8, 3 },	/*  12 |   8   |   3   | 75% */
+	{  9, 3 },	/*  13 |   9   |   3   | 77% */
+	{  9, 4 },	/*  14 |   9   |   4   | 71% */
+	{ 10, 4 },	/*  15 |  10   |   4   | 73% */
+	{ 11, 4 },	/*  16 |  11   |   4   | 75% */
+	{ 12, 4 },	/*  17 |  12   |   4   | 76% */
+	{ 12, 5 },	/*  18 |  12   |   5   | 72% */
+	{ 13, 5 },	/*  19 |  13   |   5   | 74% */
+	{ 14, 5 },	/*  20 |  14   |   5   | 75% */
+	{ 15, 5 },	/*  21 |  15   |   5   | 76% */
+	{ 15, 6 },	/*  22 |  15   |   6   | 73% */
+	{ 16, 6 },	/*  23 |  16   |   6   | 74% */
+	{ 16, 7 },	/*  24 |  16   |   7   | 71% */
+	{ 16, 8 }	/*  25 |  16   |   8   | 68% */
 };
 
 
@@ -103,14 +103,13 @@ static bool CanGetSpeedConfig(uint16_t baud, tCanBusPrescale *scale)
 	}
 	/* could not find a good bus timing configuration */
 	return false;
-} /*** end of CanGetSpeedConfig ***/
+}
 
 
 /* Time out for CAN operations */
 #define CAN_INAK_TIMEOUT	((uint32_t)0x0000FFFF)
 #define CAN_RESET_TIMEOUT	((uint32_t)0x0000FFFF)
 #define CAN_TXRQ_TIMEOUT	((uint32_t)0x0000FFFF)
-
 
 /************************************************************************************//**
 ** \brief     Initializes the CAN controller and synchronizes it to the CAN bus.
@@ -211,7 +210,7 @@ bool CanInit(void)
 	can->FMR &= ~CAN_FMR_FINIT;
 
 	return true;
-} /*** end of CanInit ***/
+}
 
 
 /************************************************************************************//**
@@ -253,7 +252,7 @@ bool CanTransmitPacket(uint8_t *data, uint8_t len)
 		return false;
 
 	return true;
-} /*** end of CanTransmitPacket ***/
+}
 
 
 /************************************************************************************//**
@@ -265,26 +264,31 @@ bool CanTransmitPacket(uint8_t *data, uint8_t len)
 bool CanReceivePacket(uint8_t *data)
 {
 	uint32_t rxMsgId;
+	uint8_t dlc;
 	bool   result = false;
 	CAN_TypeDef *can = CANx;
 
-	/* check if a new message was received (only FIFO 0 used */
-	if ((can->RF0R & (uint32_t)CAN_RF0R_FMP0) != 0)
+	// check if a new message was received (only FIFO 0 used
+	if ((can->RF0R & CAN_RF0R_FMP0) != 0)
 	{
-		/* read out the message identifier */
-		rxMsgId = (can->sFIFOMailBox[0].RIR >> 21) & (uint32_t)0x000007FF;
-		/* is this the packet identifier */
+		// read out the message identifier
+		if ((CANx->sFIFOMailBox[0].RIR & CAN_RI0R_IDE) == 0) // CAN_Id_Standard
+			rxMsgId = (can->sFIFOMailBox[0].RIR >> 21) & (uint32_t)0x000007FF;
+		else
+			rxMsgId = (can->sFIFOMailBox[0].RIR >> 3) & (uint32_t)0x1FFFFFFF;
+
+		// is this the packet identifier
 		if (rxMsgId == BOOT_COM_CAN_RX_MSG_ID)
 		{
 			result = true;
+			dlc = can->sFIFOMailBox[0].RDTR & (uint8_t)0x0F;
 			*(((uint32_t *)(data + 0))) = (uint32_t)can->sFIFOMailBox[0].RDLR;
 			*(((uint32_t *)(data + 4))) = (uint32_t)can->sFIFOMailBox[0].RDHR;
 		}
-		/* release FIFO0 */
-		can->RF0R |= CAN_RF0R_RFOM0;
+		can->RF0R |= CAN_RF0R_RFOM0;	// release FIFO0
 	}
 	return result;
-} /*** end of CanReceivePacket ***/
+}
 #endif /* BOOT_COM_CAN_ENABLE > 0 */
 
 

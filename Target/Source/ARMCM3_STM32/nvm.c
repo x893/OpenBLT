@@ -150,7 +150,7 @@ bool NvmDone(void)
 {
 #if (BOOT_NVM_HOOKS_ENABLE > 0)
 	/* give the application's NVM driver a chance to finish up */
-	if (NvmDoneHook() == false)
+	if ( ! NvmDoneHook())
 	{
 		/* error so no need to continue */
 		return false;
@@ -159,13 +159,13 @@ bool NvmDone(void)
 
 #if (BOOT_NVM_CHECKSUM_HOOKS_ENABLE > 0)
 	/* compute and write checksum, using the application specific method. */
-	if (NvmWriteChecksumHook() == false)
+	if ( ! NvmWriteChecksumHook())
 	{
 		return false;
 	}
 #else
 	/* compute and write checksum, which is programmed by the internal driver. */
-	if (FlashWriteChecksum() == false)
+	if ( ! FlashWriteChecksum())
 	{
 		return false;
 	}

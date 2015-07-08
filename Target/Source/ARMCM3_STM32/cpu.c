@@ -42,7 +42,7 @@ void CpuStartUserProgram(void)
 	void (*pProgResetHandler)(void);
 
 	/* check if a user program is present by verifying the checksum */
-	if (NvmVerifyChecksum() == false)
+	if ( ! NvmVerifyChecksum())
 	{
 		/* not a valid user program so it cannot be started */
 		return;
@@ -50,7 +50,7 @@ void CpuStartUserProgram(void)
 
 #if (BOOT_CPU_USER_PROGRAM_START_HOOK > 0)
 	/* invoke callback */
-	if (CpuUserProgramStartHook() == false)
+	if ( ! CpuUserProgramStartHook())
 	{
 		/* callback requests the user program to not be started */
 		return;

@@ -88,7 +88,7 @@ void ComTask(void)
 	static uint8_t xcpCtoReqPacket[BOOT_COM_RX_MAX_DATA];
  
 #if (BOOT_COM_CAN_ENABLE > 0)
-	if (CanReceivePacket(&xcpCtoReqPacket[0]) == true)
+	if (CanReceivePacket(&xcpCtoReqPacket[0]))
 	{
 		/* make this the active interface */
 		comActiveInterface = COM_IF_CAN;
@@ -98,7 +98,7 @@ void ComTask(void)
 #endif
 
 #if (BOOT_COM_UART_ENABLE > 0)
-	if (UartReceivePacket(&xcpCtoReqPacket[0]) == true)
+	if (UartReceivePacket(&xcpCtoReqPacket[0]))
 	{
 		/* make this the active interface */
 		comActiveInterface = COM_IF_UART;
@@ -108,7 +108,7 @@ void ComTask(void)
 #endif
 
 #if (BOOT_COM_USB_ENABLE > 0)
-	if (UsbReceivePacket(&xcpCtoReqPacket[0]) == true)
+	if (UsbReceivePacket(&xcpCtoReqPacket[0]))
 	{
 		/* make this the active interface */
 		comActiveInterface = COM_IF_USB;
@@ -118,7 +118,7 @@ void ComTask(void)
 #endif
 	
 #if (BOOT_COM_NET_ENABLE > 0)
-	if (NetReceivePacket(&xcpCtoReqPacket[0]) == true)
+	if (NetReceivePacket(&xcpCtoReqPacket[0]))
 	{
 		/* make this the active interface */
 		comActiveInterface = COM_IF_NET;

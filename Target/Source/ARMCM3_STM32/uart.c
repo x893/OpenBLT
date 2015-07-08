@@ -72,7 +72,7 @@ bool UartTransmitPacket(uint8_t *data, uint8_t len)
 	/* first transmit the length of the packet */  
 	result = UartTransmitByte(len);
 	ASSERT_RT(result == true);  
-	if (result == true)
+	if (result)
 	{
 		/* transmit all the packet bytes one-by-one */
 		for (data_index = 0; data_index < len; data_index++)
@@ -85,8 +85,14 @@ bool UartTransmitPacket(uint8_t *data, uint8_t len)
 		}
 	}
 	return result;
-} /*** end of UartTransmitPacket ***/
+}
 
+typedef struct {
+	uint8_t xcpCtoRxLength;
+	bool  xcpCtoRxInProgress;
+	uint8_t xcpCtoReqPacket[BOOT_COM_UART_RX_MAX_DATA + 1];  // one extra for length
+} UartReqPacket_t;
+UartReqPacket_t UartReqPacket;
 
 /************************************************************************************//**
 ** \brief	Receives a communication interface packet if one is present.
@@ -96,49 +102,41 @@ bool UartTransmitPacket(uint8_t *data, uint8_t len)
 ****************************************************************************************/
 bool UartReceivePacket(uint8_t *data)
 {
-	static uint8_t xcpCtoReqPacket[BOOT_COM_UART_RX_MAX_DATA+1];  /* one extra for length */
-	static uint8_t xcpCtoRxLength;
-	static bool  xcpCtoRxInProgress = false;
-
-	/* start of cto packet received? */
-	if (xcpCtoRxInProgress == false)
-	{
-		/* store the message length when received */
-		if (UartReceiveByte(&xcpCtoReqPacket[0]) == true)
+	UartReqPacket_t *req = &UartReqPacket;
+	// start of cto packet received ?
+	if ( ! req->xcpCtoRxInProgress)
+	{	// store the message length when received
+		if (UartReceiveByte(&(req->xcpCtoReqPacket[0])))
 		{
-			if (xcpCtoReqPacket[0] > 0)
-			{
-				/* indicate that a cto packet is being received */
-				xcpCtoRxInProgress = true;
-				/* reset packet data count */
-				xcpCtoRxLength = 0;
+			if (req->xcpCtoReqPacket[0] > 0)
+			{	// indicate that a cto packet is being received
+				req->xcpCtoRxInProgress = true;
+				// reset packet data count
+				req->xcpCtoRxLength = 0;
 			}
 		}
 	}
 	else
-	{
-		/* store the next packet byte */
-		if (UartReceiveByte(&xcpCtoReqPacket[xcpCtoRxLength+1]) == true)
-		{
-			/* increment the packet data count */
-			xcpCtoRxLength++;
+	{	// store the next packet byte
+		if (UartReceiveByte(&(req->xcpCtoReqPacket[req->xcpCtoRxLength + 1])))
+		{	// increment the packet data count
+			req->xcpCtoRxLength++;
 
-			/* check to see if the entire packet was received */
-			if (xcpCtoRxLength == xcpCtoReqPacket[0])
-			{
-				/* copy the packet data */
-				CpuMemCopy((uint32_t)data, (uint32_t)&xcpCtoReqPacket[1], xcpCtoRxLength);        
-				/* done with cto packet reception */
-				xcpCtoRxInProgress = false;
+			// check to see if the entire packet was received
+			if (req->xcpCtoRxLength == req->xcpCtoReqPacket[0])
+			{	// copy the packet data
+				CpuMemCopy((uint32_t)data, (uint32_t)&req->xcpCtoReqPacket[1], req->xcpCtoRxLength);
+				// done with cto packet reception
+				req->xcpCtoRxInProgress = false;
 
-				/* packet reception complete */
+				// packet reception complete
 				return true;
 			}
 		}
 	}
-	/* packet reception not yet complete */
+	// packet reception not yet complete
 	return false;
-} /*** end of UartReceivePacket ***/
+}
 
 
 /************************************************************************************//**

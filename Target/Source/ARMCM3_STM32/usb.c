@@ -149,52 +149,46 @@ bool UsbTransmitPacket(uint8_t *data, uint8_t len)
 ****************************************************************************************/
 bool UsbReceivePacket(uint8_t *data)
 {
-  static uint8_t xcpCtoReqPacket[BOOT_COM_USB_RX_MAX_DATA+1];  /* one extra for length */
-  static uint8_t xcpCtoRxLength;
-  static bool  xcpCtoRxInProgress = false;
+	static uint8_t xcpCtoReqPacket[BOOT_COM_USB_RX_MAX_DATA + 1];  // one extra for length
+	static uint8_t xcpCtoRxLength;
+	static bool  xcpCtoRxInProgress = false;
 
-  /* poll USB interrupt flags to process USB related events */
-  USB_Istr();
+	// poll USB interrupt flags to process USB related events
+	USB_Istr();
 
-  /* start of cto packet received? */
-  if (xcpCtoRxInProgress == false)
-  {
-    /* store the message length when received */
-    if (UsbReceiveByte(&xcpCtoReqPacket[0]) == true)
-    {
-      if (xcpCtoReqPacket[0] > 0)
-      {
-        /* indicate that a cto packet is being received */
-        xcpCtoRxInProgress = true;
-        /* reset packet data count */
-        xcpCtoRxLength = 0;
-      }
-    }
-  }
-  else
-  {
-    /* store the next packet byte */
-    if (UsbReceiveByte(&xcpCtoReqPacket[xcpCtoRxLength+1]) == true)
-    {
-      /* increment the packet data count */
-      xcpCtoRxLength++;
+	// start of cto packet received ?
+	if ( ! xcpCtoRxInProgress)
+	{	// store the message length when received
+		if (UsbReceiveByte(&xcpCtoReqPacket[0]))
+		{
+			if (xcpCtoReqPacket[0] > 0)
+			{	// indicate that a cto packet is being received
+				xcpCtoRxInProgress = true;
+				// reset packet data count
+				xcpCtoRxLength = 0;
+			}
+		}
+	}
+	else
+	{
+		// store the next packet byte
+		if (UsbReceiveByte(&xcpCtoReqPacket[xcpCtoRxLength + 1]))
+		{
+			// increment the packet data count
+			xcpCtoRxLength++;
 
-      /* check to see if the entire packet was received */
-      if (xcpCtoRxLength == xcpCtoReqPacket[0])
-      {
-        /* copy the packet data */
-        CpuMemCopy((uint32_t)data, (uint32_t)&xcpCtoReqPacket[1], xcpCtoRxLength);        
-        /* done with cto packet reception */
-        xcpCtoRxInProgress = false;
-
-        /* packet reception complete */
-        return true;
-      }
-    }
-  }
-  /* packet reception not yet complete */
-  return false;
-} /*** end of UsbReceivePacket ***/
+			// check to see if the entire packet was received
+			if (xcpCtoRxLength == xcpCtoReqPacket[0])
+			{
+				// copy the packet data
+				CpuMemCopy((uint32_t)data, (uint32_t)&xcpCtoReqPacket[1], xcpCtoRxLength);        
+				xcpCtoRxInProgress = false;	// done with cto packet reception
+				return true;				// packet reception complete
+			}
+		}
+	}
+	return false;	// packet reception not yet complete
+}
 
 
 /************************************************************************************//**
@@ -207,10 +201,10 @@ static bool UsbReceiveByte(uint8_t *data)
 {
   bool result;
  
-  /* obtain data from the fifo */
+  // obtain data from the fifo
   result = UsbFifoMgrRead(fifoPipeBulkOUT.handle, data);
   return result;
-} /*** end of UsbReceiveByte ***/
+}
 
 
 /************************************************************************************//**
@@ -250,21 +244,21 @@ void UsbEnterLowPowerMode(void)
 ****************************************************************************************/
 void UsbLeaveLowPowerMode(void)
 {
-  DEVICE_INFO *pInfo = &Device_Info;
+	DEVICE_INFO *pInfo = &Device_Info;
 
-  /* restore power and system clocks */
-  UsbLeaveLowPowerModeHook();
-  /* Set the device state to the correct state */
-  if (pInfo->Current_Configuration != 0)
-  {
-    /* Device configured */
-    bDeviceState = CONFIGURED;
-  }
-  else
-  {
-    bDeviceState = ATTACHED;
-  }
-} /*** end of UsbLeaveLowPowerMode ***/
+	// restore power and system clocks
+	UsbLeaveLowPowerModeHook();
+	// Set the device state to the correct state
+	if (pInfo->Current_Configuration != 0)
+	{
+		// Device configured
+		bDeviceState = CONFIGURED;
+	}
+	else
+	{
+		bDeviceState = ATTACHED;
+	}
+}
 
 
 /************************************************************************************//**

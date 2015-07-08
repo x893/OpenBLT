@@ -81,78 +81,74 @@ static void Init(void)
 		StartUpCounter++;
 	} while ((HSEStatus == 0) && (StartUpCounter != 1500));
 
-	/* check if time out was reached */
+	// check if time out was reached
 	if ((rcc->CR & RCC_CR_HSERDY) == RESET)
 	{	/* cannot continue when HSE is not ready */
 		ASSERT_RT(false);
 	}
-	/* enable flash prefetch buffer */
-	FLASH->ACR |= FLASH_ACR_PRFTBE;
-	/* reset flash wait state configuration to default 0 wait states */
-	FLASH->ACR &= ~FLASH_ACR_LATENCY;
+
+	FLASH->ACR |= FLASH_ACR_PRFTBE;		// enable flash prefetch buffer
+	FLASH->ACR &= ~FLASH_ACR_LATENCY;	// reset flash wait state configuration to default 0 wait states
 
 #if (BOOT_CPU_SYSTEM_SPEED_KHZ > 48000)
-	/* configure 2 flash wait states */
-	FLASH->ACR |= FLASH_ACR_LATENCY_2;
+	FLASH->ACR |= FLASH_ACR_LATENCY_2;	// configure 2 flash wait states
 #elif (BOOT_CPU_SYSTEM_SPEED_KHZ > 24000)  
-	/* configure 1 flash wait states */
-	FLASH->ACR |= FLASH_ACR_LATENCY_1;    
+	FLASH->ACR |= FLASH_ACR_LATENCY_1;	// configure 1 flash wait states
 #endif
 
 	rcc->CFGR |= RCC_CFGR_HPRE_DIV1;	/* HCLK = SYSCLK */
 	rcc->CFGR |= RCC_CFGR_PPRE2_DIV2;	/* PCLK2 = HCLK/2 */
 	rcc->CFGR |= RCC_CFGR_PPRE1_DIV2;	/* PCLK1 = HCLK/2 */
 
-	/* reset PLL configuration */
+	// reset PLL configuration
 	rcc->CFGR &= ~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLXTPRE | RCC_CFGR_PLLMULL);
 
-	/* assert that the pll_multiplier is between 2 and 16 */
+	// assert that the pll_multiplier is between 2 and 16
 	ASSERT_CT((BOOT_CPU_SYSTEM_SPEED_KHZ / BOOT_CPU_XTAL_SPEED_KHZ) >= 2);
 	ASSERT_CT((BOOT_CPU_SYSTEM_SPEED_KHZ / BOOT_CPU_XTAL_SPEED_KHZ) <= 16);
 
-	/* calculate multiplier value */
+	// calculate multiplier value
 	pll_multiplier = BOOT_CPU_SYSTEM_SPEED_KHZ / BOOT_CPU_XTAL_SPEED_KHZ;
-	/* convert to register value */
+	// convert to register value
 	pll_multiplier = ((pll_multiplier - 2) << 18);
 
-	/* set the PLL multiplier and clock source */
+	// set the PLL multiplier and clock source
 	rcc->CFGR |= (RCC_CFGR_PLLSRC_HSE | pll_multiplier);
-	rcc->CR |= RCC_CR_PLLON;	/* enable PLL */
+	rcc->CR |= RCC_CR_PLLON;	// enable PLL
 
-	/* wait till PLL is ready */
+	// wait till PLL is ready
 	while((rcc->CR & RCC_CR_PLLRDY) == 0)
 	{ }
 
-	/* select PLL as system clock source */
-	;
+	// select PLL as system clock source
 	rcc->CFGR = (rcc->CFGR & ~(RCC_CFGR_SW)) | RCC_CFGR_SW_PLL;
-	/* wait till PLL is used as system clock source */
-	while ((rcc->CFGR & (uint32_t)RCC_CFGR_SWS) != (uint32_t)0x08)
+	// wait till PLL is used as system clock source
+	while ((rcc->CFGR & RCC_CFGR_SWS) != 0x08)
 	{ }
 
 #if (BOOT_LED_ENABLE > 0)
 	rcc->APB2ENR |= RCC_APB2ENR_IOPAEN;
-	/* configure LED on PA5 */
-	/* CNF5[1:0] = %00 and MODE5[1:0] = %10 */
+	// configure LED on PA5
+	// CNF5[1:0] = %00 and MODE5[1:0] = %10
 	GPIOA->CRL = (GPIOA->CRL & ~((uint32_t)0x0F << (4 * 5)))
 					| ((uint32_t)0x02 << (4 * 5));
 	GPIOA->BRR = (1 << 5);
 #endif
 
 #if (BOOT_COM_UART_ENABLE > 0)
-	/* enable clock for USART2 peripheral */
+	// enable clock for USART2 peripheral
 	rcc->APB1ENR |= RCC_APB1ENR_USART2EN;
-	/* enable clocks for USART2 transmitter and receiver pins (GPIOA and AFIO) */
+	// enable clocks for USART2 transmitter and receiver pins (GPIOA and AFIO)
 	rcc->APB2ENR |= (RCC_APB2ENR_AFIOEN | RCC_APB2ENR_IOPAEN);
 
-	/* configure USART2 Tx (GPIOA2) as alternate function push-pull */
-	/* CNF2[1:0] = %10 and MODE2[1:0] = %11 */
+	// configure USART2 Tx (GPIOA2) as alternate function push-pull
+	// CNF2[1:0] = %10 and MODE2[1:0] = %11
 	GPIOA->CRL = (GPIOA->CRL & ~((uint32_t)0x0F << (4 * 2)))
 					| ((uint32_t)0x0B << (4 * 2));
 
-	/* configure USART2 Rx (GPIOA3) as alternate function input pullup */
-	/* first reset the configuration */
-	/* CNF2[1:0] = %01 and MODE2[1:0] = %00 */
+	// configure USART2 Rx (GPIOA3) as alternate function input pullup
+	// first reset the configuration
+	// CNF2[1:0] = %01 and MODE2[1:0] = %00
 	GPIOA->BSRR = (1 << 3);
 	GPIOA->CRL = (GPIOA->CRL & ~((uint32_t)0x0F << (4 * 3)))
 					| ((uint32_t)0x08 << (4 * 3));

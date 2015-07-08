@@ -219,16 +219,14 @@ void XcpPacketTransmitted(void)
 ****************************************************************************************/
 void XcpPacketReceived(uint8_t *data)
 {
-	/* was this a connect command? */
+	// was this a connect command ?
 	if (data[0] == XCP_CMD_CONNECT)
-	{
-		/* process the connect command */
+	{	// process the connect command
 		XcpCmdConnect(data);
 	}
-	/* only continue if connected */
+	// only continue if connected
 	else if ( ! xcpInfo.connected)
-	{
-		/* return to make sure response packet is not send because we are not connected */
+	{	// return to make sure response packet is not send because we are not connected
 		return;
 	}
 	else
@@ -309,20 +307,19 @@ void XcpPacketReceived(uint8_t *data)
 		}
 	}
 
-	/* make sure the previous command was completed */
+	// make sure the previous command was completed
 	if (xcpInfo.ctoPending)
-	{
-		/* command overrun occurred */
+	{	// command overrun occurred
 		XcpSetCtoError(XCP_ERR_CMD_BUSY);
 	}
 
-	/* send the response if it contains something */
+	// send the response if it contains something
 	if (xcpInfo.ctoLen > 0)
 	{
-		/* set cto packet transmission pending flag */
+		// set cto packet transmission pending flag
 		xcpInfo.ctoPending = true;
 
-		/* transmit the cto response packet */
+		// transmit the cto response packet
 		XcpTransmitPacket(xcpInfo.ctoData, xcpInfo.ctoLen);
 	}
 }
@@ -464,15 +461,13 @@ static void XcpSetCtoError(XCPError_t error)
 ****************************************************************************************/
 static void XcpCmdConnect(uint8_t *data)
 {
-	/* suppress compiler warning for unused parameter */
-	data = data;
 	uint8_t xb;
 
 #if (BOOT_FILE_SYS_ENABLE > 0)
 	/* reject the connection if the file module is not idle. this means that a firmware
 	 * update from the locally attached storage is in progress
 	 */
-	if (FileIsIdle() == false)
+	if ( ! FileIsIdle())
 	{
 		/* command not processed because we are busy */
 		XcpSetCtoError(XCP_ERR_CMD_BUSY);
@@ -486,25 +481,17 @@ static void XcpCmdConnect(uint8_t *data)
 	 * to be ignored. Note that this mode could potentially be used to specify a node ID in a
 	 * multi XCP slave system.
 	 */
-	if (XcpConnectModeHook(data[1]) == false)
-	{
-		/* set the response length to 0 to suppress it */
+	if ( ! XcpConnectModeHook(data[1]))
+	{	// set the response length to 0 to suppress it
 		xcpInfo.ctoLen = 0;
 		return;
 	}
 #endif
 
-	/* enable resource protection */
-	XcpProtectResources();
-
-	/* indicate that the connection is established */
-	xcpInfo.connected = true;
-
-	/* set packet id to command response packet */
-	xcpInfo.ctoData[0] = XCP_PID_RES;
-
-	/* report available resources */
-	xb = 0;
+	XcpProtectResources();				// enable resource protection
+	xcpInfo.connected = true;			// indicate that the connection is established
+	xcpInfo.ctoData[0] = XCP_PID_RES;	// set packet id to command response packet
+	xb = 0;								// report available resources
 
 #if (XCP_RES_CALIBRATION_EN == 1)
 	xb |= XCP_RES_CALPAG;
@@ -527,14 +514,14 @@ static void XcpCmdConnect(uint8_t *data)
 #endif
 	xcpInfo.ctoData[1] = xb;
 
-	/* report communication mode info. only byte granularity is supported */
-	/* configure for motorola or intel byte ordering */
+	// report communication mode info. only byte granularity is supported
+	// configure for motorola or intel byte ordering
 	xcpInfo.ctoData[2] = XCP_MOTOROLA_FORMAT;
 
-	/* report max cto data length */
+	// report max cto data length
 	xcpInfo.ctoData[3] = (uint8_t)XCP_CTO_PACKET_LEN;
 
-	/* report max dto data length */
+	// report max dto data length
 #if (XCP_MOTOROLA_FORMAT == 0)
 	xcpInfo.ctoData[4] = (uint8_t)XCP_DTO_PACKET_LEN;
 	xcpInfo.ctoData[5] = (uint8_t)(XCP_DTO_PACKET_LEN >> 8);
@@ -543,15 +530,14 @@ static void XcpCmdConnect(uint8_t *data)
 	xcpInfo.ctoData[5] = (uint8_t)XCP_DTO_PACKET_LEN;
 #endif
 
-	/* report msb of protocol layer version number */
+	// report msb of protocol layer version number
 	xcpInfo.ctoData[6] = XCP_VERSION_PROTOCOL_LAYER >> 8;
 
-	/* report msb of transport layer version number */
+	// report msb of transport layer version number
 	xcpInfo.ctoData[7] = XCP_VERSION_TRANSPORT_LAYER >> 8;
 
-	/* set packet length */
+	// set packet length
 	xcpInfo.ctoLen = 8;
-
 }
 
 
@@ -629,24 +615,17 @@ static void XcpCmdSynch(uint8_t *data)
 ****************************************************************************************/
 static void XcpCmdGetId(uint8_t *data)
 {
-	/* set packet id to command response packet */
-	xcpInfo.ctoData[0] = XCP_PID_RES;
+	xcpInfo.ctoData[0] = XCP_PID_RES;			// set packet id to command response packet
+	xcpInfo.mta = (uint32_t)&xcpStationId[0];	// point mta to start of station id string
 
-	/* point mta to start of station id string */
-	xcpInfo.mta = (uint32_t)&xcpStationId[0];
-
-	/* set station id mode to 0 */
-	xcpInfo.ctoData[1] = 0;
-
-	/* reset reserved values */
-	xcpInfo.ctoData[2] = 0;
+	xcpInfo.ctoData[1] = 0;	// set station id mode to 0
+	xcpInfo.ctoData[2] = 0;	// reset reserved values
 	xcpInfo.ctoData[3] = 0;
 
-	/* store station id length (excl. null termination) for response packet */
+	// store station id length (excl. null termination) for response packet
 	*(uint32_t*)&xcpInfo.ctoData[4] = (sizeof(xcpStationId)/sizeof(xcpStationId[0])) - 1;
 
-	/* set packet length */
-	xcpInfo.ctoLen = 8;
+	xcpInfo.ctoLen = 8;		// set packet length
 }
 
 
@@ -659,14 +638,9 @@ static void XcpCmdGetId(uint8_t *data)
 ****************************************************************************************/
 static void XcpCmdSetMta(uint8_t *data)
 {
-	/* set packet id to command response packet */
-	xcpInfo.ctoData[0] = XCP_PID_RES;
-
-	/* update mta. current implementation ignores address extension */
-	xcpInfo.mta = *(uint32_t*)&data[4];
-
-	/* set packet length */
-	xcpInfo.ctoLen = 1;
+	xcpInfo.ctoData[0] = XCP_PID_RES;	// set packet id to command response packet
+	xcpInfo.mta = *(uint32_t*)&data[4];	// update mta. current implementation ignores address extension
+	xcpInfo.ctoLen = 1;					// set packet length
 }
 
 
@@ -679,25 +653,19 @@ static void XcpCmdSetMta(uint8_t *data)
 ****************************************************************************************/
 static void XcpCmdUpload(uint8_t *data)
 {
-	/* validate length of upload request */
-	if (data[1] > (XCP_CTO_PACKET_LEN-1))
-	{
-		/* requested data length is too long */
+	// validate length of upload request
+	if (data[1] > (XCP_CTO_PACKET_LEN - 1))
+	{	// requested data length is too long
 		XcpSetCtoError(XCP_ERR_OUT_OF_RANGE);
 		return;
 	}
 
-	/* copy the data from memory to the data packet */
-	CpuMemCopy(((uint32_t)(uint32_t)&xcpInfo.ctoData[1]),(uint32_t)xcpInfo.mta, data[1]);
+	// copy the data from memory to the data packet
+	CpuMemCopy(((uint32_t)(uint32_t)&xcpInfo.ctoData[1]), (uint32_t)xcpInfo.mta, data[1]);
 
-	/* set packet id to command response packet */
-	xcpInfo.ctoData[0] = XCP_PID_RES;
-
-	/* post increment the mta */
-	xcpInfo.mta += data[1];
-
-	/* set packet length */
-	xcpInfo.ctoLen = data[1]+1;
+	xcpInfo.ctoData[0] = XCP_PID_RES;	// set packet id to command response packet
+	xcpInfo.mta += data[1];				// post increment the mta
+	xcpInfo.ctoLen = data[1] + 1;		// set packet length
 }
 
 
@@ -710,27 +678,21 @@ static void XcpCmdUpload(uint8_t *data)
 ****************************************************************************************/
 static void XcpCmdShortUpload(uint8_t *data)
 {
-	/* validate length of upload request */
+	// validate length of upload request
 	if (data[1] > (XCP_CTO_PACKET_LEN-1))
-	{
-		/* requested data length is too long */
+	{	// requested data length is too long
 		XcpSetCtoError(XCP_ERR_OUT_OF_RANGE);
 		return;
 	}
 
-	/* update mta. current implementation ignores address extension */
-	xcpInfo.mta = *(uint32_t*)&data[4];
+	xcpInfo.mta = *(uint32_t*)&data[4];	// update mta. current implementation ignores address extension
 
-	/* copy the data from memory to the data packet */
+	// copy the data from memory to the data packet
 	CpuMemCopy((uint32_t)((uint32_t)&xcpInfo.ctoData[1]),(uint32_t)xcpInfo.mta, data[1]);
-	/* set packet id to command response packet */
-	xcpInfo.ctoData[0] = XCP_PID_RES;
 
-	/* post increment the mta */
-	xcpInfo.mta += data[1];
-
-	/* set packet length */
-	xcpInfo.ctoLen = data[1]+1;
+	xcpInfo.ctoData[0] = XCP_PID_RES;	// set packet id to command response packet
+	xcpInfo.mta += data[1];				// post increment the mta
+	xcpInfo.ctoLen = data[1] + 1;		// set packet length
 }
 
 
@@ -745,33 +707,27 @@ static void XcpCmdShortUpload(uint8_t *data)
 static void XcpCmdDownload(uint8_t *data)
 {
 #if (XCP_SEED_KEY_PROTECTION_EN == 1)
-	/* check if CAL_PAG resource is unlocked */
+	// check if CAL_PAG resource is unlocked
 	if ((xcpInfo.protection & XCP_RES_CALPAG) != 0)
-	{
-		/* resource is locked. use seed/key sequence to unlock */
+	{	// resource is locked. use seed/key sequence to unlock
 		XcpSetCtoError(XCP_ERR_ACCESS_LOCKED);
 		return;
 	}
 #endif
 
-	/* validate length of download request */
+	// validate length of download request
 	if (data[1] > (XCP_CTO_PACKET_LEN-2))
-	{
-		/* requested data length is too long */
+	{	// requested data length is too long
 		XcpSetCtoError(XCP_ERR_OUT_OF_RANGE);
 		return;
 	}
 
-	/* copy the data from the data packet to memory */
+	// copy the data from the data packet to memory
 	CpuMemCopy((uint32_t)xcpInfo.mta, (uint32_t)((uint32_t)&data[2]), data[1]);
-	/* set packet id to command response packet */
-	xcpInfo.ctoData[0] = XCP_PID_RES;
 
-	/* post increment the mta */
-	xcpInfo.mta += data[1];
-
-	/* set packet length */
-	xcpInfo.ctoLen = 1;
+	xcpInfo.ctoData[0] = XCP_PID_RES;	// set packet id to command response packet
+	xcpInfo.mta += data[1];				// post increment the mta
+	xcpInfo.ctoLen = 1;					// set packet length
 }
 
 
@@ -785,26 +741,20 @@ static void XcpCmdDownload(uint8_t *data)
 static void XcpCmdDownloadMax(uint8_t *data)
 {
 #if (XCP_SEED_KEY_PROTECTION_EN == 1)
-	/* check if CAL_PAG resource is unlocked */
+	// check if CAL_PAG resource is unlocked
 	if ((xcpInfo.protection & XCP_RES_CALPAG) != 0)
-	{
-		/* resource is locked. use seed/key sequence to unlock */
+	{	// resource is locked. use seed/key sequence to unlock
 		XcpSetCtoError(XCP_ERR_ACCESS_LOCKED);
 		return;
 	}
 #endif
 
-	/* copy the data from the data packet to memory */
+	// copy the data from the data packet to memory
 	CpuMemCopy((uint32_t)xcpInfo.mta, (uint32_t)((uint32_t)&data[1]), XCP_CTO_PACKET_LEN - 1);
 
-	/* set packet id to command response packet */
-	xcpInfo.ctoData[0] = XCP_PID_RES;
-
-	/* post increment the mta */
-	xcpInfo.mta += XCP_CTO_PACKET_LEN-1;
-
-	/* set packet length */
-	xcpInfo.ctoLen = 1;
+	xcpInfo.ctoData[0] = XCP_PID_RES;		// set packet id to command response packet
+	xcpInfo.mta += XCP_CTO_PACKET_LEN-1;	// post increment the mta
+	xcpInfo.ctoLen = 1;						// set packet length
 }
 #endif /* XCP_RES_CALIBRATION_EN == 1 */
 
@@ -818,18 +768,14 @@ static void XcpCmdDownloadMax(uint8_t *data)
 ****************************************************************************************/
 static void XcpCmdBuildCheckSum(uint8_t *data)
 {
-	/* set packet id to command response packet */
-	xcpInfo.ctoData[0] = XCP_PID_RES;
+	xcpInfo.ctoData[0] = XCP_PID_RES;	// set packet id to command response packet
 
-	/* obtain checksum and checksum type */
+	// obtain checksum and checksum type
 	xcpInfo.ctoData[1] = XcpComputeChecksum(xcpInfo.mta, *(uint32_t *)&data[4], (uint32_t *)&xcpInfo.ctoData[4]);
 
-	/* initialize reserved parameters */
-	xcpInfo.ctoData[2] = 0;
+	xcpInfo.ctoData[2] = 0;	// initialize reserved parameters
 	xcpInfo.ctoData[3] = 0;
-
-	/* set packet length */
-	xcpInfo.ctoLen = 8;
+	xcpInfo.ctoLen = 8;		// set packet length
 }
 
 
@@ -845,40 +791,32 @@ static void XcpCmdGetSeed(uint8_t *data)
 {
 	uint8_t resourceOK;
 
-	/* init resource check variable as if an illegal resource is requested */
+	// init resource check variable as if an illegal resource is requested
 	resourceOK = 0;
 
 	/* check if calibration/paging resource is requested for seed/key and make
 	 * sure this is the only requested resource
 	 */
 	if (((data[2] & XCP_RES_CALPAG) > 0) && ((data[2] & ~XCP_RES_CALPAG) == 0))
-	{
 		resourceOK = 1;
-	}
 
 	/* check if programming resource is requested for seed/key and make
 	 * sure this is the only requested resource
 	 */
 	if (((data[2] & XCP_RES_PGM) > 0) && ((data[2] & ~XCP_RES_PGM) == 0))
-	{
 		resourceOK = 1;
-	}
 
 	/* check if data acquisition resource is requested for seed/key and make
 	 * sure this is the only requested resource
 	 */
 	if (((data[2] & XCP_RES_DAQ) > 0) && ((data[2] & ~XCP_RES_DAQ) == 0))
-	{
 		resourceOK = 1;
-	}
 
 	/* check if data stimulation resource is requested for seed/key and make
 	 * sure this is the only requested resource
 	 */
 	if (((data[2] & XCP_RES_STIM) > 0) && ((data[2] & ~XCP_RES_STIM) == 0))
-	{
 		resourceOK = 1;
-	}
 
 	/* now process the resource validation */
 	if (resourceOK == 0)
@@ -887,24 +825,24 @@ static void XcpCmdGetSeed(uint8_t *data)
 		return;
 	}
 
-	/* store resource for which the seed/key sequence is started */
+	// store resource for which the seed/key sequence is started
 	xcpInfo.s_n_k_resource = data[2];
 
-	/* set packet id to command response packet */
+	// set packet id to command response packet
 	xcpInfo.ctoData[0] = XCP_PID_RES;
 
-	/* request the seed from the application */
+	// request the seed from the application
 	xcpInfo.ctoData[1] = XcpGetSeed(xcpInfo.s_n_k_resource, &xcpInfo.ctoData[2]);
 
-	/* seed cannot be longer than XCP_CTO_PACKET_LEN-2 */
+	// seed cannot be longer than XCP_CTO_PACKET_LEN-2
 	if (xcpInfo.ctoData[1] > (XCP_CTO_PACKET_LEN - 2))
 	{
-		/* seed length length is too long */
+		// seed length length is too long
 		XcpSetCtoError(XCP_ERR_OUT_OF_RANGE);
 		return;
 	}
 
-	/* set packet length */
+	// set packet length
 	xcpInfo.ctoLen = xcpInfo.ctoData[1] + 2;
 }
 
@@ -918,43 +856,28 @@ static void XcpCmdGetSeed(uint8_t *data)
 ****************************************************************************************/
 static void XcpCmdUnlock(uint8_t *data)
 {
-	/* key cannot be longer than XCP_CTO_PACKET_LEN-2 */
+	// key cannot be longer than XCP_CTO_PACKET_LEN - 2
 	if (data[1] > (XCP_CTO_PACKET_LEN-2))
-	{
-		/* key is too long incorrect */
+	{	// key is too long incorrect
 		XcpSetCtoError(XCP_ERR_SEQUENCE);
 		return;
 	}
 
-	/* verify the key */
+	// verify the key
 	if (XcpVerifyKey(xcpInfo.s_n_k_resource, &data[2], data[1]) == 0)
-	{
-		/* invalid key so inform the master and do a disconnect */
+	{	// invalid key so inform the master and do a disconnect
 		XcpSetCtoError(XCP_ERR_ACCESS_LOCKED);
-
-		/* indicate that the xcp connection is disconnected */
-		xcpInfo.connected = 0;
-
-		/* enable resource protection */
-		XcpProtectResources();
-
+		xcpInfo.connected = 0;	// indicate that the xcp connection is disconnected
+		XcpProtectResources();	// enable resource protection
 		return;
 	}
 
-	/* key correct so unlock the resource */
+	// key correct so unlock the resource
 	xcpInfo.protection &= ~xcpInfo.s_n_k_resource;
-
-	/* reset seed/key resource variable for possible next unlock */
-	xcpInfo.s_n_k_resource = 0;
-
-	/* set packet id to command response packet */
-	xcpInfo.ctoData[0] = XCP_PID_RES;
-
-	/* report the current resource protection */
-	xcpInfo.ctoData[1] = xcpInfo.protection;
-
-	/* set packet length */
-	xcpInfo.ctoLen = 2;
+	xcpInfo.s_n_k_resource = 0;			// reset seed/key resource variable for possible next unlock
+	xcpInfo.ctoData[0] = XCP_PID_RES;	// set packet id to command response packet
+	xcpInfo.ctoData[1] = xcpInfo.protection;	// report the current resource protection
+	xcpInfo.ctoLen = 2;					// set packet length
 }
 #endif /* XCP_SEED_KEY_PROTECTION_EN == 1 */
 
@@ -970,28 +893,23 @@ static void XcpCmdUnlock(uint8_t *data)
 static void XcpCmdSetCalPage(uint8_t *data)
 {
 #if (XCP_SEED_KEY_PROTECTION_EN == 1)
-	/* check if CAL_PAG resource is unlocked */
+	// check if CAL_PAG resource is unlocked
 	if ((xcpInfo.protection & XCP_RES_CALPAG) == XCP_RES_CALPAG)
-	{
-		/* resource is locked. use seed/key sequence to unlock */
+	{	// resource is locked. use seed/key sequence to unlock
 		XcpSetCtoError(XCP_ERR_ACCESS_LOCKED);
 		return;
 	}
 #endif
 
-	/* select the page. note that the mode parameter is ignored */
+	// select the page. note that the mode parameter is ignored
 	if (XcpCalSetPageHook(data[2], data[3]) == 0)
-	{
-		/* calibration page could not be selected */
+	{	// calibration page could not be selected
 		XcpSetCtoError(XCP_ERR_PAGE_NOT_VALID);
 		return;
 	}
 
-	/* set packet id to command response packet */
-	xcpInfo.ctoData[0] = XCP_PID_RES;
-
-	/* set packet length */
-	xcpInfo.ctoLen = 1;
+	xcpInfo.ctoData[0] = XCP_PID_RES;	// set packet id to command response packet
+	xcpInfo.ctoLen = 1;					// set packet length
 }
 
 
@@ -1005,27 +923,19 @@ static void XcpCmdSetCalPage(uint8_t *data)
 static void XcpCmdGetCalPage(uint8_t *data)
 {
 #if (XCP_SEED_KEY_PROTECTION_EN == 1)
-	/* check if CAL_PAG resource is unlocked */
+	// check if CAL_PAG resource is unlocked
 	if ((xcpInfo.protection & XCP_RES_CALPAG) == XCP_RES_CALPAG)
-	{
-		/* resource is locked. use seed/key sequence to unlock */
+	{	// resource is locked. use seed/key sequence to unlock
 		XcpSetCtoError(XCP_ERR_ACCESS_LOCKED);
 		return;
 	}
 #endif
 
-	/* set packet id to command response packet */
-	xcpInfo.ctoData[0] = XCP_PID_RES;
-
-	/* initialize reserved parameters */
-	xcpInfo.ctoData[1] = 0;
+	xcpInfo.ctoData[0] = XCP_PID_RES;	// set packet id to command response packet
+	xcpInfo.ctoData[1] = 0;				// initialize reserved parameters
 	xcpInfo.ctoData[2] = 0;
-
-	/* store the calibration page */
-	xcpInfo.ctoData[3] = XcpCalGetPageHook(data[2]);
-
-	/* set packet length */
-	xcpInfo.ctoLen = 4;
+	xcpInfo.ctoData[3] = XcpCalGetPageHook(data[2]);	// store the calibration page
+	xcpInfo.ctoLen = 4;					// set packet length
 }
 #endif /* XCP_RES_PAGING_EN == 1 */
 
@@ -1042,34 +952,24 @@ static void XcpCmdProgramStart(uint8_t *data)
 {
 
 #if (XCP_SEED_KEY_PROTECTION_EN == 1)
-	/* check if PGM resource is unlocked */
+	// check if PGM resource is unlocked
 	if ((xcpInfo.protection & XCP_RES_PGM) == XCP_RES_PGM)
-	{
-		/* resource is locked. use seed/key sequence to unlock */
+	{	// resource is locked. use seed/key sequence to unlock
 		XcpSetCtoError(XCP_ERR_ACCESS_LOCKED);
 		return;
 	}
 #endif
 
-	/* set packet id to command response packet */
-	xcpInfo.ctoData[0] = XCP_PID_RES;
+	xcpInfo.ctoData[0] = XCP_PID_RES;	// set packet id to command response packet
+	xcpInfo.ctoData[1] = 0;				// initialize reserved parameter
+	xcpInfo.ctoData[2] = 0;				// no special communication mode supported during programming
+	xcpInfo.ctoData[3] = (uint8_t)XCP_CTO_PACKET_LEN;	// cto packet length stays the same during programming
 
-	/* initialize reserved parameter */
-	xcpInfo.ctoData[1] = 0;
-
-	/* no special communication mode supported during programming */
-	xcpInfo.ctoData[2] = 0;
-
-	/* cto packet length stays the same during programming */
-	xcpInfo.ctoData[3] = (uint8_t)XCP_CTO_PACKET_LEN;
-
-	/* no block size, st-min time, or queue size supported */
-	xcpInfo.ctoData[4] = 0;
+	xcpInfo.ctoData[4] = 0;		// no block size, st-min time, or queue size supported
 	xcpInfo.ctoData[5] = 0;
 	xcpInfo.ctoData[6] = 0;
 
-	/* set packet length */
-	xcpInfo.ctoLen = 7;
+	xcpInfo.ctoLen = 7;			// set packet length
 }
 
 
@@ -1083,31 +983,24 @@ static void XcpCmdProgramStart(uint8_t *data)
 static void XcpCmdProgramMax(uint8_t *data)
 {
 #if (XCP_SEED_KEY_PROTECTION_EN == 1)
-	/* check if PGM resource is unlocked */
+	// check if PGM resource is unlocked
 	if ((xcpInfo.protection & XCP_RES_PGM) == XCP_RES_PGM)
-	{
-		/* resource is locked. use seed/key sequence to unlock */
+	{	// resource is locked. use seed/key sequence to unlock
 		XcpSetCtoError(XCP_ERR_ACCESS_LOCKED);
 		return;
 	}
 #endif
 
-	/* program the data */
+	// program the data
 	if (NvmWrite((uint32_t)xcpInfo.mta, XCP_CTO_PACKET_LEN-1, &data[1]) == 0)
-	{
-		/* error occurred during programming */
+	{	// error occurred during programming
 		XcpSetCtoError(XCP_ERR_GENERIC);
 		return;
 	}
 
-	/* set packet id to command response packet */
-	xcpInfo.ctoData[0] = XCP_PID_RES;
-
-	/* post increment the mta */
-	xcpInfo.mta += XCP_CTO_PACKET_LEN-1;
-
-	/* set packet length */
-	xcpInfo.ctoLen = 1;
+	xcpInfo.ctoData[0] = XCP_PID_RES;		// set packet id to command response packet
+	xcpInfo.mta += XCP_CTO_PACKET_LEN - 1;	// post increment the mta
+	xcpInfo.ctoLen = 1;						// set packet length
 }
 
 
@@ -1121,50 +1014,41 @@ static void XcpCmdProgramMax(uint8_t *data)
 static void XcpCmdProgram(uint8_t *data)
 {
 #if (XCP_SEED_KEY_PROTECTION_EN == 1)
-	/* check if PGM resource is unlocked */
+	// check if PGM resource is unlocked
 	if ((xcpInfo.protection & XCP_RES_PGM) == XCP_RES_PGM)
-	{
-		/* resource is locked. use seed/key sequence to unlock */
+	{	// resource is locked. use seed/key sequence to unlock
 		XcpSetCtoError(XCP_ERR_ACCESS_LOCKED);
 		return;
 	}
 #endif
 
-	/* validate length of download request */
-	if (data[1] > (XCP_CTO_PACKET_LEN-2))
-	{
-		/* requested data length is too long */
+	// validate length of download request
+	if (data[1] > (XCP_CTO_PACKET_LEN - 2))
+	{	// requested data length is too long
 		XcpSetCtoError(XCP_ERR_OUT_OF_RANGE);
 		return;
 	}
 
-	/* set packet id to command response packet */
-	xcpInfo.ctoData[0] = XCP_PID_RES;
+	xcpInfo.ctoData[0] = XCP_PID_RES;	// set packet id to command response packet
+	xcpInfo.ctoLen = 1;					// set packet length
 
-	/* set packet length */
-	xcpInfo.ctoLen = 1;
-
-	/* end of programming sequence (datasize is 0)? */
+	// end of programming sequence (datasize is 0) ?
 	if (data[1] == 0)
-	{
-		/* call erase/programming cleanup routine */
-		if (NvmDone() == false)
-		{
-			/* error occurred while finishing up programming */
+	{	// call erase/programming cleanup routine
+		if ( ! NvmDone())
+		{	// error occurred while finishing up programming
 			XcpSetCtoError(XCP_ERR_GENERIC);
 		}
 		return;
 	}
-	/* program the data */
+	// program the data
 	if (NvmWrite((uint32_t)xcpInfo.mta, data[1], &data[2]) == 0)
-	{
-		/* error occurred during programming */
+	{	// error occurred during programming
 		XcpSetCtoError(XCP_ERR_GENERIC);
 		return;
 	}
 
-	/* post increment the mta */
-	xcpInfo.mta += data[1];
+	xcpInfo.mta += data[1];	// post increment the mta
 }
 
 

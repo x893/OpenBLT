@@ -58,7 +58,7 @@ void BackDoorInit(void)
 	BackDoorInitHook();
 
 	/* attempt to start the user program when no backdoor entry is requested */
-	if (BackDoorEntryHook() == false)
+	if ( ! BackDoorEntryHook())
 	{
 		/* this function does not return if a valid user program is present */
 		CpuStartUserProgram();
@@ -97,10 +97,8 @@ void BackDoorCheck(void)
 	/* check if a connection with the host was already established. in this case the
 	 * backdoor stays open anyway, so no need to check if it needs to be closed. 
 	 */
-	if (ComIsConnected() == true)
-	{
+	if (ComIsConnected())
 		return;
-	}
 	#endif
 
 	#if (BOOT_FILE_SYS_ENABLE > 0)
@@ -108,14 +106,14 @@ void BackDoorCheck(void)
 	 * locally attached storage is in progress. in this case the backdoor stays open 
 	 * anyway, so no need to check if it needs to be closed. 
 	 */
-	if (FileIsIdle() == false)
+	if ( ! FileIsIdle())
 	{
 		return;
 	}
 	#endif  
   
 	/* when the backdoor is still open, check if it's time to close it */
-	if (backdoorOpen == true)
+	if (backdoorOpen)
 	{
 		/* check if the backdoor entry time window elapsed */
 		if (TimerGet() >= (BACKDOOR_ENTRY_TIMEOUT_MS + backdoorOpenTime))
@@ -127,7 +125,7 @@ void BackDoorCheck(void)
 			 * last check to see if a firmware update from locally attached storage is
 			 * pending.
 			 */
-			if (FileHandleFirmwareUpdateRequest() == false)
+			if ( ! FileHandleFirmwareUpdateRequest())
 	#endif
 			{
 				/* no firmware update requests detected, so attempt to start the user program.

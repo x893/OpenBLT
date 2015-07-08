@@ -22,20 +22,20 @@ void UsbConnectHook(bool connect)
 	/* the connection to the USB bus is typically controlled by software through a digital
 	 * output. the GPIO pin for this must be configured as such.
 	 */
-	if (initialized == false)
+	if ( ! initialized)
 	{
-		/* enable clock for PC11 pin peripheral (GPIOC) */
+		// enable clock for PC11 pin peripheral (GPIOC)
 		RCC->APB2ENR |= (uint32_t)(0x00000010);
-		/* configure DIS (GPIOC11) as open drain digital output */
-		/* first reset the configuration */
+		// configure DIS (GPIOC11) as open drain digital output
+		// first reset the configuration
 		GPIOC->CRH &= ~(uint32_t)((uint32_t)0xf << 12);
 		/* CNF11[1:0] = %01 and MODE11[1:0] = %11 */
 		GPIOC->CRH |= (uint32_t)((uint32_t)0x7 << 12);
-		/* set to initialized as this part only has to be done once after reset */
+		// set to initialized as this part only has to be done once after reset
 		initialized = true;
 	}
-	/* determine if the USB should be connected or disconnected */
-	if (connect == true)
+	// determine if the USB should be connected or disconnected
+	if (connect)
 	{
 		/* the GPIO has a pull-up so to connect to the USB bus the pin needs to go low */
 		GPIOC->BRR = (uint32_t)((uint32_t)0x1 << 11);
@@ -56,7 +56,7 @@ void UsbConnectHook(bool connect)
 ****************************************************************************************/
 void UsbEnterLowPowerModeHook(void)
 {
-	/* support to enter a low power mode can be implemented here */
+	// support to enter a low power mode can be implemented here
 } /*** end of UsbEnterLowPowerMode ***/
 
 
