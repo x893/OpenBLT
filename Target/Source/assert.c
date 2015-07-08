@@ -71,15 +71,15 @@ static volatile blt_int32u assert_failure_line;
 ****************************************************************************************/
 void AssertFailure(blt_char *file, blt_int32u line)
 {
-  /* store the file string and line number so that it can be read on a breakpoint*/
-  assert_failure_file = file;
-  assert_failure_line = line;
-  /* hang the software so that it requires a hard reset */
-  for(;;) 
-  { 
-    /* keep servicing the watchdog so that this one does not cause a reset */
-    CopService(); 
-  }
+	/* store the file string and line number so that it can be read on a breakpoint*/
+	assert_failure_file = file;
+	assert_failure_line = line;
+	/* hang the software so that it requires a hard reset */
+	for(;;) 
+	{ 
+		/* keep servicing the watchdog so that this one does not cause a reset */
+		CopService(); 
+	}
 } /*** end of AssertFailure ***/
 #endif /* !NDEBUG */
 

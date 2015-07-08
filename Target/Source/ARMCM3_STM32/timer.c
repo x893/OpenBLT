@@ -83,16 +83,16 @@ static blt_int32u millisecond_counter;
 ****************************************************************************************/
 void TimerInit(void)
 {
-  /* reset the timer configuration */
-  TimerReset();
-  /* configure the systick frequency as a 1 ms event generator */
-  SYSTICK->LOAD = BOOT_CPU_SYSTEM_SPEED_KHZ - 1;
-  /* reset the current counter value */
-  SYSTICK->VAL = 0;
-  /* select core clock as source and enable the timer */
-  SYSTICK->CTRL = SYSTICK_BIT_CLKSOURCE | SYSTICK_BIT_ENABLE;
-  /* reset the millisecond counter value */
-  millisecond_counter = 0;
+	/* reset the timer configuration */
+	TimerReset();
+	/* configure the systick frequency as a 1 ms event generator */
+	SYSTICK->LOAD = BOOT_CPU_SYSTEM_SPEED_KHZ - 1;
+	/* reset the current counter value */
+	SYSTICK->VAL = 0;
+	/* select core clock as source and enable the timer */
+	SYSTICK->CTRL = SYSTICK_BIT_CLKSOURCE | SYSTICK_BIT_ENABLE;
+	/* reset the millisecond counter value */
+	millisecond_counter = 0;
 } /*** end of TimerInit ***/
 
 

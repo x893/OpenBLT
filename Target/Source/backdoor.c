@@ -90,31 +90,31 @@ static blt_int32u backdoorOpenTime;
 void BackDoorInit(void)
 {
 #if (BOOT_BACKDOOR_HOOKS_ENABLE > 0)
-  /* initialize application's backdoor functionality */
-  BackDoorInitHook();
+	/* initialize application's backdoor functionality */
+	BackDoorInitHook();
   
-  /* attempt to start the user program when no backdoor entry is requested */
-  if (BackDoorEntryHook() == BLT_FALSE)
-  {
-    /* this function does not return if a valid user program is present */
-    CpuStartUserProgram();
-  }
-  #if (BOOT_FILE_SYS_ENABLE > 0)
-  else
-  {
-    /* the backdoor is open so we should check if a update from locally  attached storage 
-     * is requested and, if so, start it.
-     */
-    FileHandleFirmwareUpdateRequest();
-  }
-  #endif
+	/* attempt to start the user program when no backdoor entry is requested */
+	if (BackDoorEntryHook() == BLT_FALSE)
+	{
+		/* this function does not return if a valid user program is present */
+		CpuStartUserProgram();
+	}
+	#if (BOOT_FILE_SYS_ENABLE > 0)
+	else
+	{
+		/* the backdoor is open so we should check if a update from locally  attached storage 
+		 * is requested and, if so, start it.
+		 */
+		FileHandleFirmwareUpdateRequest();
+	}
+	#endif
 #else
-  /* open the backdoor after a reset */
-  backdoorOpen = BLT_TRUE;
-  backdoorOpenTime = TimerGet();
+	/* open the backdoor after a reset */
+	backdoorOpen = BLT_TRUE;
+	backdoorOpenTime = TimerGet();
 #endif
-  /* perform the first check that open/closes the backdoor */
-  BackDoorCheck();
+	/* perform the first check that open/closes the backdoor */
+	BackDoorCheck();
 } /*** end of BackDoorInit ***/
 
 
@@ -129,49 +129,50 @@ void BackDoorInit(void)
 void BackDoorCheck(void)
 {
 #if (BOOT_BACKDOOR_HOOKS_ENABLE == 0)
-  #if (BOOT_COM_ENABLE > 0)
-  /* check if a connection with the host was already established. in this case the
-   * backdoor stays open anyway, so no need to check if it needs to be closed. 
-   */
-  if (ComIsConnected() == BLT_TRUE)
-  {
-    return;
-  }
-  #endif
-  #if (BOOT_FILE_SYS_ENABLE > 0)
-  /* check if the file module is busy, indicating that a firmware update through the
-   * locally attached storage is in progress. in this case the backdoor stays open 
-   * anyway, so no need to check if it needs to be closed. 
-   */
-  if (FileIsIdle() == BLT_FALSE)
-  {
-    return;
-  }
-  #endif  
+	#if (BOOT_COM_ENABLE > 0)
+	/* check if a connection with the host was already established. in this case the
+	 * backdoor stays open anyway, so no need to check if it needs to be closed. 
+	 */
+	if (ComIsConnected() == BLT_TRUE)
+	{
+		return;
+	}
+	#endif
+
+	#if (BOOT_FILE_SYS_ENABLE > 0)
+	/* check if the file module is busy, indicating that a firmware update through the
+	 * locally attached storage is in progress. in this case the backdoor stays open 
+	 * anyway, so no need to check if it needs to be closed. 
+	 */
+	if (FileIsIdle() == BLT_FALSE)
+	{
+		return;
+	}
+	#endif  
   
-  /* when the backdoor is still open, check if it's time to close it */
-  if (backdoorOpen == BLT_TRUE)
-  {
-    /* check if the backdoor entry time window elapsed */
-    if (TimerGet() >= (BACKDOOR_ENTRY_TIMEOUT_MS + backdoorOpenTime))
-    {
-      /* close the backdoor */
-      backdoorOpen = BLT_FALSE;
-      #if (BOOT_FILE_SYS_ENABLE > 0)
-      /* during the timed backdoor no remote update request was detected. now do one
-       * last check to see if a firmware update from locally attached storage is
-       * pending.
-       */
-      if (FileHandleFirmwareUpdateRequest() == BLT_FALSE)
-      #endif
-      {
-        /* no firmware update requests detected, so attempt to start the user program.
-         * this function does not return if a valid user program is present.
-         */
-        CpuStartUserProgram();
-      }
-    }
-  }
+	/* when the backdoor is still open, check if it's time to close it */
+	if (backdoorOpen == BLT_TRUE)
+	{
+		/* check if the backdoor entry time window elapsed */
+		if (TimerGet() >= (BACKDOOR_ENTRY_TIMEOUT_MS + backdoorOpenTime))
+		{
+			/* close the backdoor */
+			backdoorOpen = BLT_FALSE;
+	#if (BOOT_FILE_SYS_ENABLE > 0)
+			/* during the timed backdoor no remote update request was detected. now do one
+			 * last check to see if a firmware update from locally attached storage is
+			 * pending.
+			 */
+			if (FileHandleFirmwareUpdateRequest() == BLT_FALSE)
+	#endif
+			{
+				/* no firmware update requests detected, so attempt to start the user program.
+				 * this function does not return if a valid user program is present.
+				 */
+				CpuStartUserProgram();
+			}
+		}
+	}
 #endif
 } /*** end of BackDoorCheck ***/
 

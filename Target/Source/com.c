@@ -65,32 +65,37 @@ static tComInterfaceId comActiveInterface = COM_IF_OTHER;
 ****************************************************************************************/
 void ComInit(void)
 {
-  /* initialize the XCP communication protocol */
-  XcpInit();
+	/* initialize the XCP communication protocol */
+	XcpInit();
+
 #if (BOOT_COM_CAN_ENABLE > 0)
-  /* initialize the CAN controller */
-  CanInit();
-  /* set it as active */
-  comActiveInterface = COM_IF_CAN;
+	/* initialize the CAN controller */
+	CanInit();
+	/* set it as active */
+	comActiveInterface = COM_IF_CAN;
 #endif
+
 #if (BOOT_COM_UART_ENABLE > 0)
-  /* initialize the UART interface */
-  UartInit();
-  /* set it as active */
-  comActiveInterface = COM_IF_UART;
+	/* initialize the UART interface */
+	UartInit();
+	/* set it as active */
+	comActiveInterface = COM_IF_UART;
 #endif
+
 #if (BOOT_COM_USB_ENABLE > 0)
-  /* initialize the USB interface */
-  UsbInit();
-  /* set it as active */
-  comActiveInterface = COM_IF_USB;
+	/* initialize the USB interface */
+	UsbInit();
+	/* set it as active */
+	comActiveInterface = COM_IF_USB;
 #endif
+
 #if (BOOT_COM_NET_ENABLE > 0)
-  /* initialize the TCP/IP interface */
-  NetInit();
-  /* set it as active */
-  comActiveInterface = COM_IF_NET;
+	/* initialize the TCP/IP interface */
+	NetInit();
+	/* set it as active */
+	comActiveInterface = COM_IF_NET;
 #endif
+
 } /*** end of ComInit ***/
 
 
@@ -102,44 +107,47 @@ void ComInit(void)
 ****************************************************************************************/
 void ComTask(void)
 {
-  /* make xcpCtoReqPacket static for runtime efficiency */
-  static blt_int8u xcpCtoReqPacket[BOOT_COM_RX_MAX_DATA];
+	/* make xcpCtoReqPacket static for runtime efficiency */
+	static blt_int8u xcpCtoReqPacket[BOOT_COM_RX_MAX_DATA];
  
 #if (BOOT_COM_CAN_ENABLE > 0)
-  if (CanReceivePacket(&xcpCtoReqPacket[0]) == BLT_TRUE)
-  {
-    /* make this the active interface */
-    comActiveInterface = COM_IF_CAN;
-    /* process packet */
-    XcpPacketReceived(&xcpCtoReqPacket[0]);
-  }
+	if (CanReceivePacket(&xcpCtoReqPacket[0]) == BLT_TRUE)
+	{
+		/* make this the active interface */
+		comActiveInterface = COM_IF_CAN;
+		/* process packet */
+		XcpPacketReceived(&xcpCtoReqPacket[0]);
+	}
 #endif
+
 #if (BOOT_COM_UART_ENABLE > 0)
-  if (UartReceivePacket(&xcpCtoReqPacket[0]) == BLT_TRUE)
-  {
-    /* make this the active interface */
-    comActiveInterface = COM_IF_UART;
-    /* process packet */
-    XcpPacketReceived(&xcpCtoReqPacket[0]);
-  }
+	if (UartReceivePacket(&xcpCtoReqPacket[0]) == BLT_TRUE)
+	{
+		/* make this the active interface */
+		comActiveInterface = COM_IF_UART;
+		/* process packet */
+		XcpPacketReceived(&xcpCtoReqPacket[0]);
+	}
 #endif
+
 #if (BOOT_COM_USB_ENABLE > 0)
-  if (UsbReceivePacket(&xcpCtoReqPacket[0]) == BLT_TRUE)
-  {
-    /* make this the active interface */
-    comActiveInterface = COM_IF_USB;
-    /* process packet */
-    XcpPacketReceived(&xcpCtoReqPacket[0]);
-  }
+	if (UsbReceivePacket(&xcpCtoReqPacket[0]) == BLT_TRUE)
+	{
+		/* make this the active interface */
+		comActiveInterface = COM_IF_USB;
+		/* process packet */
+		XcpPacketReceived(&xcpCtoReqPacket[0]);
+	}
 #endif
+	
 #if (BOOT_COM_NET_ENABLE > 0)
-  if (NetReceivePacket(&xcpCtoReqPacket[0]) == BLT_TRUE)
-  {
-    /* make this the active interface */
-    comActiveInterface = COM_IF_NET;
-    /* process packet */
-    XcpPacketReceived(&xcpCtoReqPacket[0]);
-  }
+	if (NetReceivePacket(&xcpCtoReqPacket[0]) == BLT_TRUE)
+	{
+		/* make this the active interface */
+		comActiveInterface = COM_IF_NET;
+		/* process packet */
+		XcpPacketReceived(&xcpCtoReqPacket[0]);
+	}
 #endif
 } /*** end of ComTask ***/
 

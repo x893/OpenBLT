@@ -62,14 +62,14 @@ extern blt_bool  NvmVerifyChecksumHook(void);
 void NvmInit(void)
 {
 #if (BOOT_NVM_HOOKS_ENABLE > 0)
-  /* give the application a chance to initialize a driver for operating on NVM
-   * that is not by default supported by this driver.
-   */
-  NvmInitHook();
+	/* give the application a chance to initialize a driver for operating on NVM
+	 * that is not by default supported by this driver.
+	 */
+	NvmInitHook();
 #endif
 
-  /* init the internal driver */
-  FlashInit();
+	/* init the internal driver */
+	FlashInit();
 } /*** end of NvmInit ***/
 
 

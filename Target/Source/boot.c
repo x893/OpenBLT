@@ -44,22 +44,22 @@
 ****************************************************************************************/
 void BootInit(void)
 {
-  /* initialize the watchdog */
-  CopInit();
-  /* initialize the millisecond timer */
-  TimerInit();
-  /* initialize the non-volatile memory driver */
-  NvmInit();
-  #if (BOOT_FILE_SYS_ENABLE > 0)
-  /* initialize the file system module */
-  FileInit();
-  #endif 
-  #if (BOOT_COM_ENABLE > 0)
-  /* initialize the communication module */
-  ComInit();
-  #endif
-  /* initialize the backdoor entry */
-  BackDoorInit();
+	CopInit();		/* initialize the watchdog */
+	TimerInit();	/* initialize the millisecond timer */
+	NvmInit();		/* initialize the non-volatile memory driver */
+
+#if (BOOT_FILE_SYS_ENABLE > 0)
+	/* initialize the file system module */
+	FileInit();
+#endif
+
+#if (BOOT_COM_ENABLE > 0)
+	/* initialize the communication module */
+	ComInit();
+#endif
+
+	/* initialize the backdoor entry */
+	BackDoorInit();
 } /*** end of BootInit ***/
 
 

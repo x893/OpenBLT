@@ -76,20 +76,19 @@
 	/** \brief Configure number of bytes in the host->target data packet. */
 	#define BOOT_COM_USB_RX_MAX_DATA        (63)
 
-#define BOOT_COM_CAN_ENABLE				(1)
-	#define BOOT_COM_CAN_BAUDRATE		256		/* CAN speed 256Kbit	*/
-
-#define BOOT_COM_UART_ENABLE			(1)
-	#define BOOT_COM_UART_BAUDRATE			115200
-	#define BOOT_COM_UART_TX_MAX_DATA		64
-	#define BOOT_COM_UART_RX_MAX_DATA		64
-	#define BOOT_COM_UART_CHANNEL_INDEX		1
+#define BOOT_COM_CAN_ENABLE				(0)
+	#define BOOT_COM_CAN_BAUDRATE			250000	/* CAN speed 250 000 bps	*/
 	#define BOOT_COM_CAN_TX_MSG_ID			0x700
 	#define BOOT_COM_CAN_TX_MAX_DATA		8
 	#define BOOT_COM_CAN_RX_MSG_ID			0x701
 	#define BOOT_COM_CAN_RX_MAX_DATA		8
 	#define BOOT_COM_CAN_CHANNEL_INDEX		0
 
+#define BOOT_COM_UART_ENABLE			(1)
+	#define BOOT_COM_UART_BAUDRATE			115200
+	#define BOOT_COM_UART_TX_MAX_DATA		64
+	#define BOOT_COM_UART_RX_MAX_DATA		64
+	#define BOOT_COM_UART_CHANNEL_INDEX		1
 
 /****************************************************************************************
 *   B A C K D O O R   E N T R Y   C O N F I G U R A T I O N

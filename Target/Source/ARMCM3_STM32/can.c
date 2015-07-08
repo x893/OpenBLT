@@ -39,61 +39,8 @@
 
 
 #if (BOOT_COM_CAN_ENABLE > 0)
-/****************************************************************************************
-* Type definitions
-****************************************************************************************/
-/** \brief CAN transmission mailbox layout. */
-typedef struct
-{
-  volatile blt_int32u TIR;
-  volatile blt_int32u TDTR;
-  volatile blt_int32u TDLR;
-  volatile blt_int32u TDHR;
-} tCanTxMailBox;
 
-/** \brief CAN reception FIFO mailbox layout. */
-typedef struct
-{
-  volatile blt_int32u RIR;
-  volatile blt_int32u RDTR;
-  volatile blt_int32u RDLR;
-  volatile blt_int32u RDHR;
-} tCanRxFIFOMailBox; 
-
-/** \brief CAN filter register layout. */
-typedef struct
-{
-  volatile blt_int32u FR1;
-  volatile blt_int32u FR2;
-} tCanFilter;
-
-/** \brief CAN controller register layout. */
-typedef struct
-{
-  volatile blt_int32u MCR;
-  volatile blt_int32u MSR;
-  volatile blt_int32u TSR;
-  volatile blt_int32u RF0R;
-  volatile blt_int32u RF1R;
-  volatile blt_int32u IER;
-  volatile blt_int32u ESR;
-  volatile blt_int32u BTR;
-  blt_int32u          RESERVED0[88];
-  tCanTxMailBox       sTxMailBox[3];
-  tCanRxFIFOMailBox   sFIFOMailBox[2];
-  blt_int32u          RESERVED1[12];
-  volatile blt_int32u FMR;
-  volatile blt_int32u FM1R;
-  blt_int32u          RESERVED2;
-  volatile blt_int32u FS1R;
-  blt_int32u          RESERVED3;
-  volatile blt_int32u FFA1R;
-  blt_int32u          RESERVED4;
-  volatile blt_int32u FA1R;
-  blt_int32u          RESERVED5[8];
-  tCanFilter          sFilterRegister[14];
-} tCanRegs;                                           
-
+#include "stm32f10x.h"
 
 /****************************************************************************************
 * Macro definitions
@@ -122,7 +69,7 @@ typedef struct
 * Register definitions
 ****************************************************************************************/
 /** \brief Macro for accessing CAN controller registers. */
-#define CANx             ((tCanRegs *) (blt_int32u)0x40006400)
+#define CANx	CAN1
 
 
 /****************************************************************************************
@@ -181,32 +128,31 @@ static const tCanBusTiming canTiming[] =
 **            otherwise.
 **
 ****************************************************************************************/
-static blt_bool CanGetSpeedConfig(blt_int16u baud, blt_int16u *prescaler, 
-                                  blt_int8u *tseg1, blt_int8u *tseg2)
+static blt_bool CanGetSpeedConfig(blt_int16u baud, blt_int16u *prescaler, blt_int8u *tseg1, blt_int8u *tseg2)
 {
-  blt_int8u  cnt;
+	blt_int8u  cnt;
 
-  /* loop through all possible time quanta configurations to find a match */
-  for (cnt=0; cnt < sizeof(canTiming)/sizeof(canTiming[0]); cnt++)
-  {
-    if (((BOOT_CPU_SYSTEM_SPEED_KHZ/2) % (baud*(canTiming[cnt].tseg1+canTiming[cnt].tseg2+1))) == 0)
-    {
-      /* compute the prescaler that goes with this TQ configuration */
-      *prescaler = (BOOT_CPU_SYSTEM_SPEED_KHZ/2)/(baud*(canTiming[cnt].tseg1+canTiming[cnt].tseg2+1));
+	/* loop through all possible time quanta configurations to find a match */
+	for (cnt = 0; cnt < sizeof(canTiming) / sizeof(canTiming[0]); cnt++)
+	{
+		if (((BOOT_CPU_SYSTEM_SPEED_KHZ / 2) % (baud * (canTiming[cnt].tseg1 + canTiming[cnt].tseg2 + 1))) == 0)
+		{
+			/* compute the prescaler that goes with this TQ configuration */
+			*prescaler = (BOOT_CPU_SYSTEM_SPEED_KHZ / 2) / (baud * (canTiming[cnt].tseg1 + canTiming[cnt].tseg2 + 1));
 
-      /* make sure the prescaler is valid */
-      if ( (*prescaler > 0) && (*prescaler <= 1024) )
-      {
-        /* store the bustiming configuration */
-        *tseg1 = canTiming[cnt].tseg1;
-        *tseg2 = canTiming[cnt].tseg2;
-        /* found a good bus timing configuration */
-        return BLT_TRUE;
-      }
-    }
-  }
-  /* could not find a good bus timing configuration */
-  return BLT_FALSE;
+			/* make sure the prescaler is valid */
+			if ( (*prescaler > 0) && (*prescaler <= 1024) )
+			{
+				/* store the bustiming configuration */
+				*tseg1 = canTiming[cnt].tseg1;
+				*tseg2 = canTiming[cnt].tseg2;
+				/* found a good bus timing configuration */
+				return BLT_TRUE;
+			}
+		}
+	}
+	/* could not find a good bus timing configuration */
+	return BLT_FALSE;
 } /*** end of CanGetSpeedConfig ***/
 
 
@@ -217,66 +163,66 @@ static blt_bool CanGetSpeedConfig(blt_int16u baud, blt_int16u *prescaler,
 ****************************************************************************************/
 void CanInit(void)
 {
-  blt_int16u prescaler;
-  blt_int8u  tseg1, tseg2;
-  blt_bool   result;
+	blt_int16u prescaler;
+	blt_int8u  tseg1, tseg2;
+	blt_bool   result;
 
-  /* the current implementation supports CAN1. throw an assertion error in case a 
-   * different CAN channel is configured.  
-   */
-  ASSERT_CT(BOOT_COM_CAN_CHANNEL_INDEX == 0); 
-  /* obtain bittiming configuration information */
-  result = CanGetSpeedConfig(BOOT_COM_CAN_BAUDRATE/1000, &prescaler, &tseg1, &tseg2);
-  ASSERT_RT(result == BLT_TRUE);
-  /* disable all can interrupt. this driver works in polling mode */
-  CANx->IER = (blt_int32u)0;
-  /* set request to reset the can controller */
-  CANx->MCR |= CAN_BIT_RESET ;
-  /* wait for acknowledge that the can controller was reset */
-  while ((CANx->MCR & CAN_BIT_RESET) != 0)
-  {
-    /* keep the watchdog happy */
-    CopService();
-  }
-  /* exit from sleep mode, which is the default mode after reset */
-  CANx->MCR &= ~CAN_BIT_SLEEP;
-  /* set request to enter initialisation mode */
-  CANx->MCR |= CAN_BIT_INRQ ;
-  /* wait for acknowledge that initialization mode was entered */
-  while ((CANx->MSR & CAN_BIT_INAK) == 0)
-  {
-    /* keep the watchdog happy */
-    CopService();
-  }
-  /* configure the bittming */
-  CANx->BTR = (blt_int32u)((blt_int32u)(tseg1 - 1) << 16) | \
-              (blt_int32u)((blt_int32u)(tseg2 - 1) << 20) | \
-              (blt_int32u)(prescaler - 1);
-  /* set request to leave initialisation mode */
-  CANx->MCR &= ~CAN_BIT_INRQ;
-  /* wait for acknowledge that initialization mode was exited */
-  while ((CANx->MSR & CAN_BIT_INAK) != 0)
-  {
-    /* keep the watchdog happy */
-    CopService();
-  }
-  /* enter initialisation mode for the acceptance filter */
-  CANx->FMR |= CAN_BIT_FINIT;
-  /* deactivate filter 0 */
-  CANx->FA1R &= ~CAN_BIT_FILTER0;
-  /* 32-bit scale for the filter */
-  CANx->FS1R |= CAN_BIT_FILTER0;
-  /* open up the acceptance filter to receive all messages */
-  CANx->sFilterRegister[0].FR1 = 0; 
-  CANx->sFilterRegister[0].FR2 = 0; 
-  /* select id/mask mode for the filter */
-  CANx->FM1R &= ~CAN_BIT_FILTER0;
-  /* FIFO 0 assignation for the filter */
-  CANx->FFA1R &= ~CAN_BIT_FILTER0;
-  /* filter activation */
-  CANx->FA1R |= CAN_BIT_FILTER0;
-  /* leave initialisation mode for the acceptance filter */
-  CANx->FMR &= ~CAN_BIT_FINIT;
+	/* the current implementation supports CAN1. throw an assertion error in case a 
+	* different CAN channel is configured.  
+	*/
+	ASSERT_CT(BOOT_COM_CAN_CHANNEL_INDEX == 0); 
+	/* obtain bittiming configuration information */
+	result = CanGetSpeedConfig(BOOT_COM_CAN_BAUDRATE / 1000, &prescaler, &tseg1, &tseg2);
+	ASSERT_RT(result == BLT_TRUE);
+	/* disable all can interrupt. this driver works in polling mode */
+	CANx->IER = (blt_int32u)0;
+	/* set request to reset the can controller */
+	CANx->MCR |= CAN_BIT_RESET ;
+	/* wait for acknowledge that the can controller was reset */
+	while ((CANx->MCR & CAN_BIT_RESET) != 0)
+	{
+		/* keep the watchdog happy */
+		CopService();
+	}
+	/* exit from sleep mode, which is the default mode after reset */
+	CANx->MCR &= ~CAN_BIT_SLEEP;
+	/* set request to enter initialisation mode */
+	CANx->MCR |= CAN_BIT_INRQ ;
+	/* wait for acknowledge that initialization mode was entered */
+	while ((CANx->MSR & CAN_BIT_INAK) == 0)
+	{
+		/* keep the watchdog happy */
+		CopService();
+	}
+	/* configure the bittming */
+	CANx->BTR = (blt_int32u)((blt_int32u)(tseg1 - 1) << 16) |
+				(blt_int32u)((blt_int32u)(tseg2 - 1) << 20) |
+				(blt_int32u)(prescaler - 1);
+	/* set request to leave initialisation mode */
+	CANx->MCR &= ~CAN_BIT_INRQ;
+	/* wait for acknowledge that initialization mode was exited */
+	while ((CANx->MSR & CAN_BIT_INAK) != 0)
+	{
+		/* keep the watchdog happy */
+		CopService();
+	}
+	/* enter initialisation mode for the acceptance filter */
+	CANx->FMR |= CAN_BIT_FINIT;
+	/* deactivate filter 0 */
+	CANx->FA1R &= ~CAN_BIT_FILTER0;
+	/* 32-bit scale for the filter */
+	CANx->FS1R |= CAN_BIT_FILTER0;
+	/* open up the acceptance filter to receive all messages */
+	CANx->sFilterRegister[0].FR1 = 0; 
+	CANx->sFilterRegister[0].FR2 = 0; 
+	/* select id/mask mode for the filter */
+	CANx->FM1R &= ~CAN_BIT_FILTER0;
+	/* FIFO 0 assignation for the filter */
+	CANx->FFA1R &= ~CAN_BIT_FILTER0;
+	/* filter activation */
+	CANx->FA1R |= CAN_BIT_FILTER0;
+	/* leave initialisation mode for the acceptance filter */
+	CANx->FMR &= ~CAN_BIT_FINIT;
 } /*** end of CanInit ***/
 
 
@@ -289,30 +235,32 @@ void CanInit(void)
 ****************************************************************************************/
 void CanTransmitPacket(blt_int8u *data, blt_int8u len)
 {
-  /* make sure that transmit mailbox 0 is available */
-  ASSERT_RT((CANx->TSR&CAN_BIT_TME0) == CAN_BIT_TME0);
-  /* store the 11-bit message identifier */
-  CANx->sTxMailBox[0].TIR &= CAN_BIT_TXRQ;
-  CANx->sTxMailBox[0].TIR |= ((blt_int32u)BOOT_COM_CAN_TX_MSG_ID << 21);
-  /* store the message date length code (DLC) */
-  CANx->sTxMailBox[0].TDTR = len;
-  /* store the message data bytes */
-  CANx->sTxMailBox[0].TDLR = (((blt_int32u)data[3] << 24) | \
-                              ((blt_int32u)data[2] << 16) | \
-                              ((blt_int32u)data[1] <<  8) | \
-                              ((blt_int32u)data[0]));
-  CANx->sTxMailBox[0].TDHR = (((blt_int32u)data[7] << 24) | \
-                              ((blt_int32u)data[6] << 16) | \
-                              ((blt_int32u)data[5] <<  8) | \
-                              ((blt_int32u)data[4]));
-  /* request the start of message transmission */
-  CANx->sTxMailBox[0].TIR |= CAN_BIT_TXRQ;
-  /* wait for transmit completion */
-  while ((CANx->TSR&CAN_BIT_TME0) == 0)
-  {
-    /* keep the watchdog happy */
-    CopService();
-  }
+	/* make sure that transmit mailbox 0 is available */
+	ASSERT_RT((CANx->TSR&CAN_BIT_TME0) == CAN_BIT_TME0);
+	/* store the 11-bit message identifier */
+	CANx->sTxMailBox[0].TIR &= CAN_BIT_TXRQ;
+	CANx->sTxMailBox[0].TIR |= ((blt_int32u)BOOT_COM_CAN_TX_MSG_ID << 21);
+	/* store the message date length code (DLC) */
+	CANx->sTxMailBox[0].TDTR = len;
+	/* store the message data bytes */
+	CANx->sTxMailBox[0].TDLR = (((blt_int32u)data[3] << 24) |
+								((blt_int32u)data[2] << 16) |
+								((blt_int32u)data[1] <<  8) |
+								((blt_int32u)data[0])
+								);
+	CANx->sTxMailBox[0].TDHR = (((blt_int32u)data[7] << 24) |
+								((blt_int32u)data[6] << 16) |
+								((blt_int32u)data[5] <<  8) |
+								((blt_int32u)data[4])
+								);
+	/* request the start of message transmission */
+	CANx->sTxMailBox[0].TIR |= CAN_BIT_TXRQ;
+	/* wait for transmit completion */
+	while ((CANx->TSR & CAN_BIT_TME0) == 0)
+	{
+		/* keep the watchdog happy */
+		CopService();
+	}
 } /*** end of CanTransmitPacket ***/
 
 
@@ -324,32 +272,32 @@ void CanTransmitPacket(blt_int8u *data, blt_int8u len)
 ****************************************************************************************/
 blt_bool CanReceivePacket(blt_int8u *data)
 {
-  blt_int32u rxMsgId;
-  blt_bool   result = BLT_FALSE;
+	blt_int32u rxMsgId;
+	blt_bool   result = BLT_FALSE;
 
-  /* check if a new message was received */
-  if ((CANx->RF0R&(blt_int32u)0x00000003) > 0)
-  {
-    /* read out the message identifier */
-    rxMsgId = (blt_int32u)0x000007FF & (CANx->sFIFOMailBox[0].RIR >> 21);
-    /* is this the packet identifier */
-    if (rxMsgId == BOOT_COM_CAN_RX_MSG_ID)
-    {
-      result = BLT_TRUE;
-      /* store the received packet data */
-      data[0] = (blt_int8u)0xFF & CANx->sFIFOMailBox[0].RDLR;
-      data[1] = (blt_int8u)0xFF & (CANx->sFIFOMailBox[0].RDLR >> 8);
-      data[2] = (blt_int8u)0xFF & (CANx->sFIFOMailBox[0].RDLR >> 16);
-      data[3] = (blt_int8u)0xFF & (CANx->sFIFOMailBox[0].RDLR >> 24);
-      data[4] = (blt_int8u)0xFF & CANx->sFIFOMailBox[0].RDHR;
-      data[5] = (blt_int8u)0xFF & (CANx->sFIFOMailBox[0].RDHR >> 8);
-      data[6] = (blt_int8u)0xFF & (CANx->sFIFOMailBox[0].RDHR >> 16);
-      data[7] = (blt_int8u)0xFF & (CANx->sFIFOMailBox[0].RDHR >> 24);
-    }
-    /* release FIFO0 */
-    CANx->RF0R |= CAN_BIT_RFOM0;
-  }
-  return result;
+	/* check if a new message was received */
+	if ((CANx->RF0R & (uint32_t)CAN_RF0R_FMP0) != 0)
+	{
+		/* read out the message identifier */
+		rxMsgId = (CANx->sFIFOMailBox[0].RIR >> 21) & (uint32_t)0x000007FF;
+		/* is this the packet identifier */
+		if (rxMsgId == BOOT_COM_CAN_RX_MSG_ID)
+		{
+			result = BLT_TRUE;
+			/* store the received packet data */
+			data[0] = (blt_int8u)0xFF & CANx->sFIFOMailBox[0].RDLR;
+			data[1] = (blt_int8u)0xFF & (CANx->sFIFOMailBox[0].RDLR >> 8);
+			data[2] = (blt_int8u)0xFF & (CANx->sFIFOMailBox[0].RDLR >> 16);
+			data[3] = (blt_int8u)0xFF & (CANx->sFIFOMailBox[0].RDLR >> 24);
+			data[4] = (blt_int8u)0xFF & CANx->sFIFOMailBox[0].RDHR;
+			data[5] = (blt_int8u)0xFF & (CANx->sFIFOMailBox[0].RDHR >> 8);
+			data[6] = (blt_int8u)0xFF & (CANx->sFIFOMailBox[0].RDHR >> 16);
+			data[7] = (blt_int8u)0xFF & (CANx->sFIFOMailBox[0].RDHR >> 24);
+		}
+		/* release FIFO0 */
+		CANx->RF0R |= CAN_BIT_RFOM0;
+	}
+	return result;
 } /*** end of CanReceivePacket ***/
 #endif /* BOOT_COM_CAN_ENABLE > 0 */
 

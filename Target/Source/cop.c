@@ -54,7 +54,7 @@ extern void CopServiceHook(void);
 void CopInit(void)
 {
 #if (BOOT_COP_HOOKS_ENABLE > 0)
-  CopInitHook();
+	CopInitHook();
 #endif
 } /*** end of CopInit ***/
 
@@ -67,7 +67,7 @@ void CopInit(void)
 void CopService(void)
 {
 #if (BOOT_COP_HOOKS_ENABLE > 0)
-  CopServiceHook();
+	CopServiceHook();
 #endif
 } /*** end of CopService ***/
 

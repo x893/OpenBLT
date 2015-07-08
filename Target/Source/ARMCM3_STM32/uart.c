@@ -38,56 +38,21 @@
 
 
 #if (BOOT_COM_UART_ENABLE > 0)
-/****************************************************************************************
-* Type definitions
-****************************************************************************************/
-/** \brief UART register layout. */
-typedef struct
-{
-  volatile blt_int16u SR;                           /**< status register               */
-  blt_int16u          RESERVED0;
-  volatile blt_int16u DR;                           /**< data register                 */
-  blt_int16u          RESERVED1;
-  volatile blt_int16u BRR;                          /**< baudrate register             */
-  blt_int16u          RESERVED2;
-  volatile blt_int16u CR1;                          /**< control register 1            */
-  blt_int16u          RESERVED3;
-  volatile blt_int16u CR2;                          /**< control register 2            */
-  blt_int16u          RESERVED4;
-  volatile blt_int16u CR3;                          /**< control register 3            */
-  blt_int16u          RESERVED5;
-  volatile blt_int16u GTPR;                         /**< guard time and prescale reg.  */
-  blt_int16u          RESERVED6;
-} tUartRegs;                                        /**< UART register layout type     */
 
-
-/****************************************************************************************
-* Macro definitions
-****************************************************************************************/
-/** \brief USART enable bit. */
-#define UART_BIT_UE    ((blt_int16u)0x2000)
-/** \brief Transmitter enable bit. */
-#define UART_BIT_TE    ((blt_int16u)0x0008)
-/** \brief Receiver enable bit. */
-#define UART_BIT_RE    ((blt_int16u)0x0004)
-/** \brief Transmit data reg. empty bit. */
-#define UART_BIT_TXE   ((blt_int16u)0x0080)
-/** \brief Read data reg. not empty bit. */
-#define UART_BIT_RXNE  ((blt_int16u)0x0020)
-
+#include "stm32f10x.h"
 
 /****************************************************************************************
 * Register definitions
 ****************************************************************************************/
 #if (BOOT_COM_UART_CHANNEL_INDEX == 0)
-/** \brief Set UART base address to USART1. */
-#define UARTx          ((tUartRegs *) (blt_int32u)0x40013800)
+	/** \brief Set UART base address to USART1. */
+	#define UARTx		USART1
 #elif (BOOT_COM_UART_CHANNEL_INDEX == 1)
-/** \brief Set UART base address to USART2. */
-#define UARTx          ((tUartRegs *) (blt_int32u)0x40004400)
+	/** \brief Set UART base address to USART2. */
+	#define UARTx		USART2
 #else
-/** \brief Set UART base address to USART1 by default. */
-#define UARTx          ((tUartRegs *) (blt_int32u)0x40013800)
+	/** \brief Set UART base address to USART1 by default. */
+	#define UARTx		USART1
 #endif
 
 
@@ -105,24 +70,24 @@ static blt_bool UartTransmitByte(blt_int8u data);
 ****************************************************************************************/
 void UartInit(void)
 {
-  /* the current implementation supports USART1 and USART2. throw an assertion error in 
-   * case a different UART channel is configured.  
-   */
-  ASSERT_CT((BOOT_COM_UART_CHANNEL_INDEX == 0) || (BOOT_COM_UART_CHANNEL_INDEX == 1)); 
-  /* first reset the UART configuration. note that this already configures the UART
-   * for 1 stopbit, 8 databits and no parity.
-   */
-  UARTx->BRR = 0;
-  UARTx->CR1 = 0;
-  UARTx->CR2 = 0;
-  UARTx->CR3 = 0;
-  UARTx->GTPR = 0;
-  /* configure the baudrate, knowing that PCLKx is configured to be half of
-   * BOOT_CPU_SYSTEM_SPEED_KHZ.
-   */
-  UARTx->BRR = ((BOOT_CPU_SYSTEM_SPEED_KHZ/2)*(blt_int32u)1000)/BOOT_COM_UART_BAUDRATE;
-  /* enable the UART including the transmitter and the receiver */
-  UARTx->CR1 |= (UART_BIT_UE | UART_BIT_TE | UART_BIT_RE);
+	/* the current implementation supports USART1 and USART2. throw an assertion error in 
+	* case a different UART channel is configured.  
+	*/
+	ASSERT_CT((BOOT_COM_UART_CHANNEL_INDEX == 0) || (BOOT_COM_UART_CHANNEL_INDEX == 1)); 
+	/* first reset the UART configuration. note that this already configures the UART
+	* for 1 stopbit, 8 databits and no parity.
+	*/
+	UARTx->BRR = 0;
+	UARTx->CR1 = 0;
+	UARTx->CR2 = 0;
+	UARTx->CR3 = 0;
+	UARTx->GTPR = 0;
+	/* configure the baudrate, knowing that PCLKx is configured to be half of
+	* BOOT_CPU_SYSTEM_SPEED_KHZ.
+	*/
+	UARTx->BRR = ((BOOT_CPU_SYSTEM_SPEED_KHZ / 2) * 1000) / BOOT_COM_UART_BAUDRATE;
+	/* enable the UART including the transmitter and the receiver */
+	UARTx->CR1 |= (USART_CR1_UE | USART_CR1_TE | USART_SR_NE);
 } /*** end of UartInit ***/
 
 
@@ -135,25 +100,25 @@ void UartInit(void)
 ****************************************************************************************/
 void UartTransmitPacket(blt_int8u *data, blt_int8u len)
 {
-  blt_int16u data_index;
-  blt_bool result;
+	blt_int16u data_index;
+	blt_bool result;
 
-  /* verify validity of the len-paramenter */
-  ASSERT_RT(len <= BOOT_COM_UART_TX_MAX_DATA);
+	/* verify validity of the len-paramenter */
+	ASSERT_RT(len <= BOOT_COM_UART_TX_MAX_DATA);
 
-  /* first transmit the length of the packet */  
-  result = UartTransmitByte(len);
-  ASSERT_RT(result == BLT_TRUE);  
-  
-  /* transmit all the packet bytes one-by-one */
-  for (data_index = 0; data_index < len; data_index++)
-  {
-    /* keep the watchdog happy */
-    CopService();
-    /* write byte */
-    result = UartTransmitByte(data[data_index]);
-    ASSERT_RT(result == BLT_TRUE);  
-  }
+	/* first transmit the length of the packet */  
+	result = UartTransmitByte(len);
+	ASSERT_RT(result == BLT_TRUE);  
+
+	/* transmit all the packet bytes one-by-one */
+	for (data_index = 0; data_index < len; data_index++)
+	{
+		/* keep the watchdog happy */
+		CopService();
+		/* write byte */
+		result = UartTransmitByte(data[data_index]);
+		ASSERT_RT(result == BLT_TRUE);
+	}
 } /*** end of UartTransmitPacket ***/
 
 
@@ -165,48 +130,48 @@ void UartTransmitPacket(blt_int8u *data, blt_int8u len)
 ****************************************************************************************/
 blt_bool UartReceivePacket(blt_int8u *data)
 {
-  static blt_int8u xcpCtoReqPacket[BOOT_COM_UART_RX_MAX_DATA+1];  /* one extra for length */
-  static blt_int8u xcpCtoRxLength;
-  static blt_bool  xcpCtoRxInProgress = BLT_FALSE;
+	static blt_int8u xcpCtoReqPacket[BOOT_COM_UART_RX_MAX_DATA+1];  /* one extra for length */
+	static blt_int8u xcpCtoRxLength;
+	static blt_bool  xcpCtoRxInProgress = BLT_FALSE;
 
-  /* start of cto packet received? */
-  if (xcpCtoRxInProgress == BLT_FALSE)
-  {
-    /* store the message length when received */
-    if (UartReceiveByte(&xcpCtoReqPacket[0]) == BLT_TRUE)
-    {
-      if (xcpCtoReqPacket[0] > 0)
-      {
-        /* indicate that a cto packet is being received */
-        xcpCtoRxInProgress = BLT_TRUE;
-        /* reset packet data count */
-        xcpCtoRxLength = 0;
-      }
-    }
-  }
-  else
-  {
-    /* store the next packet byte */
-    if (UartReceiveByte(&xcpCtoReqPacket[xcpCtoRxLength+1]) == BLT_TRUE)
-    {
-      /* increment the packet data count */
-      xcpCtoRxLength++;
+	/* start of cto packet received? */
+	if (xcpCtoRxInProgress == BLT_FALSE)
+	{
+		/* store the message length when received */
+		if (UartReceiveByte(&xcpCtoReqPacket[0]) == BLT_TRUE)
+		{
+			if (xcpCtoReqPacket[0] > 0)
+			{
+				/* indicate that a cto packet is being received */
+				xcpCtoRxInProgress = BLT_TRUE;
+				/* reset packet data count */
+				xcpCtoRxLength = 0;
+			}
+		}
+	}
+	else
+	{
+		/* store the next packet byte */
+		if (UartReceiveByte(&xcpCtoReqPacket[xcpCtoRxLength+1]) == BLT_TRUE)
+		{
+			/* increment the packet data count */
+			xcpCtoRxLength++;
 
-      /* check to see if the entire packet was received */
-      if (xcpCtoRxLength == xcpCtoReqPacket[0])
-      {
-        /* copy the packet data */
-        CpuMemCopy((blt_int32u)data, (blt_int32u)&xcpCtoReqPacket[1], xcpCtoRxLength);        
-        /* done with cto packet reception */
-        xcpCtoRxInProgress = BLT_FALSE;
+			/* check to see if the entire packet was received */
+			if (xcpCtoRxLength == xcpCtoReqPacket[0])
+			{
+				/* copy the packet data */
+				CpuMemCopy((blt_int32u)data, (blt_int32u)&xcpCtoReqPacket[1], xcpCtoRxLength);        
+				/* done with cto packet reception */
+				xcpCtoRxInProgress = BLT_FALSE;
 
-        /* packet reception complete */
-        return BLT_TRUE;
-      }
-    }
-  }
-  /* packet reception not yet complete */
-  return BLT_FALSE;
+				/* packet reception complete */
+				return BLT_TRUE;
+			}
+		}
+	}
+	/* packet reception not yet complete */
+	return BLT_FALSE;
 } /*** end of UartReceivePacket ***/
 
 
@@ -218,16 +183,16 @@ blt_bool UartReceivePacket(blt_int8u *data)
 ****************************************************************************************/
 static blt_bool UartReceiveByte(blt_int8u *data)
 {
-  /* check if a new byte was received by means of the RDR-bit */
-  if((UARTx->SR & UART_BIT_RXNE) != 0)
-  {
-    /* store the received byte */
-    data[0] = UARTx->DR;
-    /* inform caller of the newly received byte */
-    return BLT_TRUE;
-  }
-  /* inform caller that no new data was received */
-  return BLT_FALSE;
+	/* check if a new byte was received by means of the RDR-bit */
+	if((UARTx->SR & USART_SR_RXNE) != 0)
+	{
+		/* store the received byte */
+		data[0] = UARTx->DR;
+		/* inform caller of the newly received byte */
+		return BLT_TRUE;
+	}
+	/* inform caller that no new data was received */
+	return BLT_FALSE;
 } /*** end of UartReceiveByte ***/
 
 
@@ -239,22 +204,22 @@ static blt_bool UartReceiveByte(blt_int8u *data)
 ****************************************************************************************/
 static blt_bool UartTransmitByte(blt_int8u data)
 {
-  /* check if tx holding register can accept new data */
-  if ((UARTx->SR & UART_BIT_TXE) == 0)
-  {
-    /* UART not ready. should not happen */
-    return BLT_FALSE;
-  }
-  /* write byte to transmit holding register */
-  UARTx->DR = data;
-  /* wait for tx holding register to be empty */
-  while((UARTx->SR & UART_BIT_TXE) == 0) 
-  { 
-    /* keep the watchdog happy */
-    CopService();
-  }
-  /* byte transmitted */
-  return BLT_TRUE;
+	/* check if tx holding register can accept new data */
+	if ((UARTx->SR & USART_SR_TXE) == 0)
+	{
+		/* UART not ready. should not happen */
+		return BLT_FALSE;
+	}
+	/* write byte to transmit holding register */
+	UARTx->DR = data;
+	/* wait for tx holding register to be empty */
+	while((UARTx->SR & USART_SR_TXE) == 0) 
+	{ 
+		/* keep the watchdog happy */
+		CopService();
+	}
+	/* byte transmitted */
+	return BLT_TRUE;
 } /*** end of UartTransmitByte ***/
 #endif /* BOOT_COM_UART_ENABLE > 0 */
 

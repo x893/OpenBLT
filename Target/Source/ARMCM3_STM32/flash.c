@@ -233,9 +233,9 @@ static tFlashBlockInfo bootBlockInfo;
 ****************************************************************************************/
 void FlashInit(void)
 {
-  /* init the flash block info structs by setting the address to an invalid address */
-  blockInfo.base_addr = FLASH_INVALID_ADDRESS;
-  bootBlockInfo.base_addr = FLASH_INVALID_ADDRESS;
+	/* init the flash block info structs by setting the address to an invalid address */
+	blockInfo.base_addr = FLASH_INVALID_ADDRESS;
+	bootBlockInfo.base_addr = FLASH_INVALID_ADDRESS;
 } /*** end of FlashInit ***/
 
 
