@@ -39,3 +39,5 @@ build/
 *.dep
 settings/
 ide/settings/
+*.tmp
+*.TMP

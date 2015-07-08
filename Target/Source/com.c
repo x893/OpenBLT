@@ -1,66 +1,43 @@
-/************************************************************************************//**
-* \file         Source\com.c
-* \brief        Bootloader communication interface source file.
-* \ingroup      Core
-* \internal
-*----------------------------------------------------------------------------------------
-*                          C O P Y R I G H T
-*----------------------------------------------------------------------------------------
-*   Copyright (c) 2011  by Feaser    http://www.feaser.com    All rights reserved
-*
-*----------------------------------------------------------------------------------------
-*                            L I C E N S E
-*----------------------------------------------------------------------------------------
-* This file is part of OpenBLT. OpenBLT is free software: you can redistribute it and/or
-* modify it under the terms of the GNU General Public License as published by the Free
-* Software Foundation, either version 3 of the License, or (at your option) any later
-* version.
-*
-* OpenBLT is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-* PURPOSE. See the GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License along with OpenBLT.
-* If not, see <http://www.gnu.org/licenses/>.
-*
-* A special exception to the GPL is included to allow you to distribute a combined work 
-* that includes OpenBLT without being obliged to provide the source code for any 
-* proprietary components. The exception text is included at the bottom of the license
-* file <license.html>.
-* 
-* \endinternal
-****************************************************************************************/
+#include "boot.h"	/* bootloader generic header	*/
 
-/****************************************************************************************
-* Include files
-****************************************************************************************/
-#include "boot.h"                                /* bootloader generic header          */
 #if (BOOT_COM_CAN_ENABLE > 0)
-  #include "can.h"                                    /* can driver module             */
-#endif
-#if (BOOT_COM_UART_ENABLE > 0)
-  #include "uart.h"                                   /* uart driver module            */
-#endif
-#if (BOOT_COM_USB_ENABLE > 0)
-  #include "usb.h"                                    /* usb driver module             */
-#endif
-#if (BOOT_COM_NET_ENABLE > 0)
-  #include "net.h"                                    /* tcp/ip driver module          */
+  #include "can.h"	/* can driver module			*/
 #endif
 
+#if (BOOT_COM_UART_ENABLE > 0)
+  #include "uart.h"	/* uart driver module			*/
+#endif
+
+#if (BOOT_COM_USB_ENABLE > 0)
+  #include "usb.h"	/* usb driver module			*/
+#endif
+
+#if (BOOT_COM_NET_ENABLE > 0)
+  #include "net.h"	/* tcp/ip driver module			*/
+#endif
 
 #if (BOOT_COM_ENABLE > 0)
+
 /****************************************************************************************
 * Local data declarations
 ****************************************************************************************/
 /** \brief Holds the communication interface of the currently active interface. */
 static tComInterfaceId comActiveInterface = COM_IF_OTHER;
 
+/************************************************************************************//**
+** \brief	Set active communiction interface
+** \return	none
+**
+****************************************************************************************/
+void ComSetInterface(tComInterfaceId id)
+{
+	comActiveInterface = id;
+}
 
 /************************************************************************************//**
-** \brief     Initializes the communication module including the hardware needed for 
-**            the communication.
-** \return    none
+** \brief	Initializes the communication module including the hardware needed for 
+**			the communication.
+** \return	none
 **
 ****************************************************************************************/
 void ComInit(void)
@@ -100,18 +77,18 @@ void ComInit(void)
 
 
 /************************************************************************************//**
-** \brief     Updates the communication module by checking if new data was received 
-**            and submitting the request to process newly received data.
-** \return    none
+** \brief	Updates the communication module by checking if new data was received 
+**			and submitting the request to process newly received data.
+** \return	none
 **
 ****************************************************************************************/
 void ComTask(void)
 {
 	/* make xcpCtoReqPacket static for runtime efficiency */
-	static blt_int8u xcpCtoReqPacket[BOOT_COM_RX_MAX_DATA];
+	static uint8_t xcpCtoReqPacket[BOOT_COM_RX_MAX_DATA];
  
 #if (BOOT_COM_CAN_ENABLE > 0)
-	if (CanReceivePacket(&xcpCtoReqPacket[0]) == BLT_TRUE)
+	if (CanReceivePacket(&xcpCtoReqPacket[0]) == true)
 	{
 		/* make this the active interface */
 		comActiveInterface = COM_IF_CAN;
@@ -121,7 +98,7 @@ void ComTask(void)
 #endif
 
 #if (BOOT_COM_UART_ENABLE > 0)
-	if (UartReceivePacket(&xcpCtoReqPacket[0]) == BLT_TRUE)
+	if (UartReceivePacket(&xcpCtoReqPacket[0]) == true)
 	{
 		/* make this the active interface */
 		comActiveInterface = COM_IF_UART;
@@ -131,7 +108,7 @@ void ComTask(void)
 #endif
 
 #if (BOOT_COM_USB_ENABLE > 0)
-	if (UsbReceivePacket(&xcpCtoReqPacket[0]) == BLT_TRUE)
+	if (UsbReceivePacket(&xcpCtoReqPacket[0]) == true)
 	{
 		/* make this the active interface */
 		comActiveInterface = COM_IF_USB;
@@ -141,7 +118,7 @@ void ComTask(void)
 #endif
 	
 #if (BOOT_COM_NET_ENABLE > 0)
-	if (NetReceivePacket(&xcpCtoReqPacket[0]) == BLT_TRUE)
+	if (NetReceivePacket(&xcpCtoReqPacket[0]) == true)
 	{
 		/* make this the active interface */
 		comActiveInterface = COM_IF_NET;
@@ -153,75 +130,78 @@ void ComTask(void)
 
 
 /************************************************************************************//**
-** \brief     Releases the communication module.
-** \return    none
+** \brief	Releases the communication module.
+** \return	none
 **
 ****************************************************************************************/
 void ComFree(void)
 {
 #if (BOOT_COM_USB_ENABLE > 0)
-  /* disconnect the usb device from the usb host */
-  UsbFree();
+	/* disconnect the usb device from the usb host */
+	UsbFree();
 #endif
 } /*** end of ComFree ***/
 
 
 /************************************************************************************//**
-** \brief     Transmits the packet using the xcp transport layer.
-** \param     data Pointer to the byte buffer with packet data.
-** \param     len  Number of data bytes that need to be transmitted.
-** \return    none
+** \brief	Transmits the packet using the xcp transport layer.
+** \param	data Pointer to the byte buffer with packet data.
+** \param	len  Number of data bytes that need to be transmitted.
+** \return	none
 **
 ****************************************************************************************/
-void ComTransmitPacket(blt_int8u *data, blt_int16u len)
+void ComTransmitPacket(uint8_t *data, uint16_t len)
 {
 #if (BOOT_COM_CAN_ENABLE > 0)
-  /* transmit the packet. note that len is limited to 8 in the plausibility check,
-   * so cast is okay.
-   */
-  if (comActiveInterface == COM_IF_CAN)
-  {
-    CanTransmitPacket(data, (blt_int8u)len);
-  }
-#endif
-#if (BOOT_COM_UART_ENABLE > 0)
-  /* transmit the packet. note that len is limited to 255 in the plausibility check,
-   * so cast is okay.
-   */
-  if (comActiveInterface == COM_IF_UART)
-  {
-    UartTransmitPacket(data, (blt_int8u)len);
-  }
-#endif
-#if (BOOT_COM_USB_ENABLE > 0)
-  /* transmit the packet */
-  if (comActiveInterface == COM_IF_USB)
-  {
-    UsbTransmitPacket(data, len);
-  }
-#endif
-#if (BOOT_COM_NET_ENABLE > 0)
-  if (comActiveInterface == COM_IF_NET)
-  {
-    /* transmit the packet */
-    NetTransmitPacket(data, len);
-  }
+	/* transmit the packet. note that len is limited to 8 in the plausibility check,
+	 * so cast is okay.
+	 */
+	if (comActiveInterface == COM_IF_CAN)
+	{
+		CanTransmitPacket(data, (uint8_t)len);
+	}
 #endif
 
-  /* send signal that the packet was transmitted */
-  XcpPacketTransmitted();
+#if (BOOT_COM_UART_ENABLE > 0)
+	/* transmit the packet. note that len is limited to 255 in the plausibility check,
+	 * so cast is okay.
+	 */
+	if (comActiveInterface == COM_IF_UART)
+	{
+		UartTransmitPacket(data, (uint8_t)len);
+	}
+#endif
+
+#if (BOOT_COM_USB_ENABLE > 0)
+	/* transmit the packet */
+	if (comActiveInterface == COM_IF_USB)
+	{
+		UsbTransmitPacket(data, len);
+	}
+#endif
+
+#if (BOOT_COM_NET_ENABLE > 0)
+	if (comActiveInterface == COM_IF_NET)
+	{
+		/* transmit the packet */
+		NetTransmitPacket(data, len);
+	}
+#endif
+
+	/* send signal that the packet was transmitted */
+	XcpPacketTransmitted();
 } /*** end of ComTransmitPacket ***/
 
 
 /************************************************************************************//**
-** \brief     Obtains the maximum number of bytes that can be received on the specified
-**            communication interface.
-** \return    Maximum number of bytes that can be received.
+** \brief	Obtains the maximum number of bytes that can be received on the specified
+**			communication interface.
+** \return	Maximum number of bytes that can be received.
 **
 ****************************************************************************************/
-blt_int16u ComGetActiveInterfaceMaxRxLen(void)
+uint16_t ComGetActiveInterfaceMaxRxLen(void)
 {
-  blt_int16u result;
+  uint16_t result;
   
   /* filter on communication interface identifier */
   switch (comActiveInterface)
@@ -252,14 +232,14 @@ blt_int16u ComGetActiveInterfaceMaxRxLen(void)
 
 
 /************************************************************************************//**
-** \brief     Obtains the maximum number of bytes that can be transmitted on the 
-**            specified communication interface.
-** \return    Maximum number of bytes that can be received.
+** \brief	Obtains the maximum number of bytes that can be transmitted on the 
+**			specified communication interface.
+** \return	Maximum number of bytes that can be received.
 **
 ****************************************************************************************/
-blt_int16u ComGetActiveInterfaceMaxTxLen(void)
+uint16_t ComGetActiveInterfaceMaxTxLen(void)
 {
-  blt_int16u result;
+  uint16_t result;
   
   /* filter on communication interface identifier */
   switch (comActiveInterface)
@@ -290,11 +270,11 @@ blt_int16u ComGetActiveInterfaceMaxTxLen(void)
 
 
 /************************************************************************************//**
-** \brief     This function obtains the XCP connection state.
-** \return    BLT_TRUE when an XCP connection is established, BLT_FALSE otherwise.
+** \brief	This function obtains the XCP connection state.
+** \return	true when an XCP connection is established, BLT_FALSE otherwise.
 **
 ****************************************************************************************/
-blt_bool ComIsConnected(void)
+bool ComIsConnected(void)
 {
   return XcpIsConnected();
 } /*** end of ComIsConnected ***/
@@ -302,3 +282,35 @@ blt_bool ComIsConnected(void)
 #endif /* BOOT_COM_ENABLE > 0 */
 
 /*********************************** end of com.c **************************************/
+/************************************************************************************//**
+* \file         Source\com.c
+* \brief        Bootloader communication interface source file.
+* \ingroup      Core
+* \internal
+*----------------------------------------------------------------------------------------
+*                          C O P Y R I G H T
+*----------------------------------------------------------------------------------------
+*   Copyright (c) 2011  by Feaser    http://www.feaser.com    All rights reserved
+*
+*----------------------------------------------------------------------------------------
+*                            L I C E N S E
+*----------------------------------------------------------------------------------------
+* This file is part of OpenBLT. OpenBLT is free software: you can redistribute it and/or
+* modify it under the terms of the GNU General Public License as published by the Free
+* Software Foundation, either version 3 of the License, or (at your option) any later
+* version.
+*
+* OpenBLT is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+* PURPOSE. See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with OpenBLT.
+* If not, see <http://www.gnu.org/licenses/>.
+*
+* A special exception to the GPL is included to allow you to distribute a combined work 
+* that includes OpenBLT without being obliged to provide the source code for any 
+* proprietary components. The exception text is included at the bottom of the license
+* file <license.html>.
+* 
+* \endinternal
+****************************************************************************************/

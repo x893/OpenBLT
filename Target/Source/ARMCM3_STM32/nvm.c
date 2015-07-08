@@ -1,3 +1,182 @@
+#include "boot.h"                                /* bootloader generic header          */
+
+
+/****************************************************************************************
+* Hook functions
+****************************************************************************************/
+#if (BOOT_NVM_HOOKS_ENABLE > 0)
+	extern void      NvmInitHook(void);
+	extern uint8_t NvmWriteHook(blt_addr addr, uint32_t len, uint8_t *data);
+	extern uint8_t NvmEraseHook(blt_addr addr, uint32_t len);
+	extern bool  NvmDoneHook(void);
+#endif
+
+#if (BOOT_NVM_CHECKSUM_HOOKS_ENABLE > 0)
+	extern bool  NvmWriteChecksumHook(void);
+	extern bool  NvmVerifyChecksumHook(void);
+#endif
+
+
+/************************************************************************************//**
+** \brief	Initializes the NVM driver.
+** \return	none.
+**
+****************************************************************************************/
+void NvmInit(void)
+{
+#if (BOOT_NVM_HOOKS_ENABLE > 0)
+	/* give the application a chance to initialize a driver for operating on NVM
+	 * that is not by default supported by this driver.
+	 */
+	NvmInitHook();
+#endif
+
+	/* init the internal driver */
+	FlashInit();
+} /*** end of NvmInit ***/
+
+
+/************************************************************************************//**
+** \brief	Programs the non-volatile memory.
+** \param	addr Start address.
+** \param	len  Length in bytes.
+** \param	data Pointer to the data buffer.
+** \return	true if successful, false otherwise.
+**
+****************************************************************************************/
+bool NvmWrite(blt_addr addr, uint32_t len, uint8_t *data)
+{
+#if (BOOT_NVM_HOOKS_ENABLE > 0)
+	uint8_t result = BLT_NVM_NOT_IN_RANGE;
+#endif
+
+#if (BOOT_NVM_HOOKS_ENABLE > 0)
+	/* give the application a chance to operate on memory that is not by default supported
+	 * by this driver.
+	 */
+	result = NvmWriteHook(addr, len, data);
+  
+	/* process the return code */
+	if (result == BLT_NVM_OKAY)
+	{
+		/* data was within range of the additionally supported memory and succesfully
+		 * programmed, so we are all done. 
+		 */
+		return true;
+	}
+	else if (result == BLT_NVM_ERROR)
+	{
+		/* data was within range of the additionally supported memory and attempted to be
+		 * programmed, but an error occurred, so we can't continue.
+		 */
+		return false;
+	}
+#endif
+
+	/* still here so the internal driver should try and perform the program operation */
+	return FlashWrite(addr, len, data);
+} /*** end of NvmWrite ***/
+
+
+/************************************************************************************//**
+** \brief	Erases the non-volatile memory.
+** \param	addr Start address.
+** \param	len  Length in bytes.
+** \return	true if successful, false otherwise.
+**
+****************************************************************************************/
+bool NvmErase(blt_addr addr, uint32_t len)
+{
+#if (BOOT_NVM_HOOKS_ENABLE > 0)
+	uint8_t result = BLT_NVM_NOT_IN_RANGE;
+#endif
+
+#if (BOOT_NVM_HOOKS_ENABLE > 0)
+	/* give the application a chance to operate on memory that is not by default supported
+	 * by this driver.
+	 */
+	result = NvmEraseHook(addr, len);
+
+	/* process the return code */
+	if (result == BLT_NVM_OKAY)
+	{
+		/* address was within range of the additionally supported memory and succesfully
+		 * erased, so we are all done. 
+		 */
+		return true;
+	}
+	else if (result == BLT_NVM_ERROR)
+	{
+		/* address was within range of the additionally supported memory and attempted to be
+		 * erased, but an error occurred, so we can't continue.
+		 */
+		return false;
+	}
+#endif
+
+	/* still here so the internal driver should try and perform the erase operation */
+	return FlashErase(addr, len);
+} /*** end of NvmErase ***/
+
+
+/************************************************************************************//**
+** \brief	Verifies the checksum, which indicates that a valid user program is
+**			present and can be started.
+** \return	true if successful, false otherwise.
+**
+****************************************************************************************/
+bool NvmVerifyChecksum(void)
+{
+#if (BOOT_NVM_CHECKSUM_HOOKS_ENABLE > 0)
+	/* check checksum using the application specific method. */
+	return NvmVerifyChecksumHook();
+#else
+	/* check checksum using the interally supported method. */
+	return FlashVerifyChecksum();
+#endif
+} /*** end of NvmVerifyChecksum ***/
+
+
+/************************************************************************************//**
+** \brief	Once all erase and programming operations are completed, this 
+**			function is called, so at the end of the programming session and 
+**			right before a software reset is performed. It is used to calculate
+**			a checksum and program this into flash. This checksum is later used
+**			to determine if a valid user program is present in flash. 
+** \return	true if successful, false otherwise.
+**
+****************************************************************************************/
+bool NvmDone(void)
+{
+#if (BOOT_NVM_HOOKS_ENABLE > 0)
+	/* give the application's NVM driver a chance to finish up */
+	if (NvmDoneHook() == false)
+	{
+		/* error so no need to continue */
+		return false;
+	}
+#endif
+
+#if (BOOT_NVM_CHECKSUM_HOOKS_ENABLE > 0)
+	/* compute and write checksum, using the application specific method. */
+	if (NvmWriteChecksumHook() == false)
+	{
+		return false;
+	}
+#else
+	/* compute and write checksum, which is programmed by the internal driver. */
+	if (FlashWriteChecksum() == false)
+	{
+		return false;
+	}
+#endif
+
+	/* finish up internal driver operations */
+	return FlashDone();
+} /*** end of NvmDone ***/
+
+
+/*********************************** end of nvm.c **************************************/
 /************************************************************************************//**
 * \file         Source\ARMCM3_STM32\nvm.c
 * \brief        Bootloader non-volatile memory driver source file.
@@ -30,187 +209,3 @@
 * 
 * \endinternal
 ****************************************************************************************/
-
-/****************************************************************************************
-* Include files
-****************************************************************************************/
-#include "boot.h"                                /* bootloader generic header          */
-
-
-/****************************************************************************************
-* Hook functions
-****************************************************************************************/
-#if (BOOT_NVM_HOOKS_ENABLE > 0)
-extern void      NvmInitHook(void);
-extern blt_int8u NvmWriteHook(blt_addr addr, blt_int32u len, blt_int8u *data);
-extern blt_int8u NvmEraseHook(blt_addr addr, blt_int32u len);
-extern blt_bool  NvmDoneHook(void);
-#endif
-
-#if (BOOT_NVM_CHECKSUM_HOOKS_ENABLE > 0)
-extern blt_bool  NvmWriteChecksumHook(void);
-extern blt_bool  NvmVerifyChecksumHook(void);
-#endif
-
-
-
-/************************************************************************************//**
-** \brief     Initializes the NVM driver.
-** \return    none.
-**
-****************************************************************************************/
-void NvmInit(void)
-{
-#if (BOOT_NVM_HOOKS_ENABLE > 0)
-	/* give the application a chance to initialize a driver for operating on NVM
-	 * that is not by default supported by this driver.
-	 */
-	NvmInitHook();
-#endif
-
-	/* init the internal driver */
-	FlashInit();
-} /*** end of NvmInit ***/
-
-
-/************************************************************************************//**
-** \brief     Programs the non-volatile memory.
-** \param     addr Start address.
-** \param     len  Length in bytes.
-** \param     data Pointer to the data buffer.
-** \return    BLT_TRUE if successful, BLT_FALSE otherwise.
-**
-****************************************************************************************/
-blt_bool NvmWrite(blt_addr addr, blt_int32u len, blt_int8u *data)
-{
-#if (BOOT_NVM_HOOKS_ENABLE > 0)
-  blt_int8u result = BLT_NVM_NOT_IN_RANGE;
-#endif
-
-#if (BOOT_NVM_HOOKS_ENABLE > 0)
-  /* give the application a chance to operate on memory that is not by default supported
-   * by this driver.
-   */
-  result = NvmWriteHook(addr, len, data);
-  
-  /* process the return code */
-  if (result == BLT_NVM_OKAY)
-  {
-    /* data was within range of the additionally supported memory and succesfully
-     * programmed, so we are all done. 
-     */
-    return BLT_TRUE;
-  }
-  else if (result == BLT_NVM_ERROR)
-  {
-    /* data was within range of the additionally supported memory and attempted to be
-     * programmed, but an error occurred, so we can't continue.
-     */
-    return BLT_FALSE;
-  }
-#endif
-
-  /* still here so the internal driver should try and perform the program operation */
-  return FlashWrite(addr, len, data);
-} /*** end of NvmWrite ***/
-
-
-/************************************************************************************//**
-** \brief     Erases the non-volatile memory.
-** \param     addr Start address.
-** \param     len  Length in bytes.
-** \return    BLT_TRUE if successful, BLT_FALSE otherwise.
-**
-****************************************************************************************/
-blt_bool NvmErase(blt_addr addr, blt_int32u len)
-{
-#if (BOOT_NVM_HOOKS_ENABLE > 0)
-  blt_int8u result = BLT_NVM_NOT_IN_RANGE;
-#endif
-
-#if (BOOT_NVM_HOOKS_ENABLE > 0)
-  /* give the application a chance to operate on memory that is not by default supported
-   * by this driver.
-   */
-  result = NvmEraseHook(addr, len);
-  
-  /* process the return code */
-  if (result == BLT_NVM_OKAY)
-  {
-    /* address was within range of the additionally supported memory and succesfully
-     * erased, so we are all done. 
-     */
-    return BLT_TRUE;
-  }
-  else if (result == BLT_NVM_ERROR)
-  {
-    /* address was within range of the additionally supported memory and attempted to be
-     * erased, but an error occurred, so we can't continue.
-     */
-    return BLT_FALSE;
-  }
-#endif
-
-  /* still here so the internal driver should try and perform the erase operation */
-  return FlashErase(addr, len);
-} /*** end of NvmErase ***/
-
-
-/************************************************************************************//**
-** \brief     Verifies the checksum, which indicates that a valid user program is
-**            present and can be started.
-** \return    BLT_TRUE if successful, BLT_FALSE otherwise.
-**
-****************************************************************************************/
-blt_bool NvmVerifyChecksum(void)
-{
-#if (BOOT_NVM_CHECKSUM_HOOKS_ENABLE > 0)
-  /* check checksum using the application specific method. */
-  return NvmVerifyChecksumHook();
-#else
-  /* check checksum using the interally supported method. */
-  return FlashVerifyChecksum();
-#endif
-} /*** end of NvmVerifyChecksum ***/
-
-
-/************************************************************************************//**
-** \brief     Once all erase and programming operations are completed, this 
-**            function is called, so at the end of the programming session and 
-**            right before a software reset is performed. It is used to calculate
-**            a checksum and program this into flash. This checksum is later used
-**            to determine if a valid user program is present in flash. 
-** \return    BLT_TRUE if successful, BLT_FALSE otherwise.
-**
-****************************************************************************************/
-blt_bool NvmDone(void)
-{
-#if (BOOT_NVM_HOOKS_ENABLE > 0)
-  /* give the application's NVM driver a chance to finish up */
-  if (NvmDoneHook() == BLT_FALSE)
-  {
-    /* error so no need to continue */
-    return BLT_FALSE;
-  }
-#endif
-
-#if (BOOT_NVM_CHECKSUM_HOOKS_ENABLE > 0)
-  /* compute and write checksum, using the application specific method. */
-  if (NvmWriteChecksumHook() == BLT_FALSE)
-  {
-    return BLT_FALSE;
-  }
-#else
-  /* compute and write checksum, which is programmed by the internal driver. */
-  if (FlashWriteChecksum() == BLT_FALSE)
-  {
-    return BLT_FALSE;
-  }
-#endif
-
-  /* finish up internal driver operations */
-  return FlashDone();
-} /*** end of NvmDone ***/
-
-
-/*********************************** end of nvm.c **************************************/

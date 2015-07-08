@@ -38,7 +38,7 @@
 * Function prototypes
 ****************************************************************************************/
 void CpuStartUserProgram(void);
-void CpuMemCopy(blt_addr dest, blt_addr src, blt_int16u len);
+void CpuMemCopy(blt_addr dest, blt_addr src, uint16_t len);
 void CpuReset(void);
 
 

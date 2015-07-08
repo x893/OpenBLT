@@ -1,3 +1,58 @@
+#include "boot.h"	/* bootloader generic header	*/
+
+/************************************************************************************//**
+** \brief	Initializes the bootloader core. 
+** \return	none
+**
+****************************************************************************************/
+void BootInit(void)
+{
+	CopInit();		/* initialize the watchdog */
+	TimerInit();	/* initialize the millisecond timer */
+	NvmInit();		/* initialize the non-volatile memory driver */
+
+#if (BOOT_FILE_SYS_ENABLE > 0)
+	/* initialize the file system module */
+	FileInit();
+#endif
+
+#if (BOOT_COM_ENABLE > 0)
+	/* initialize the communication module */
+	ComInit();
+#endif
+
+	/* initialize the backdoor entry */
+	BackDoorInit();
+} /*** end of BootInit ***/
+
+
+/************************************************************************************//**
+** \brief	Task function of the bootloader core that drives the program. 
+** \return	none
+**
+****************************************************************************************/
+void BootTask(void)
+{
+	/* service the watchdog */
+	CopService();
+	/* update the millisecond timer */
+	TimerUpdate();
+#if (BOOT_FILE_SYS_ENABLE > 0)
+	/* call worker task for updating firmware from locally attached file storage */
+	FileTask();
+#endif /* BOOT_FILE_SYS_ENABLE > 0 */
+
+#if (BOOT_COM_ENABLE > 0)
+	/* process possibly pending communication data */
+	ComTask();
+#endif
+
+	/* control the backdoor */
+	BackDoorCheck();
+} /*** end of BootTask ***/
+
+
+/*********************************** end of boot.c *************************************/
 /************************************************************************************//**
 * \file         Source\boot.c
 * \brief        Bootloader core module source file.
@@ -30,61 +85,3 @@
 * 
 * \endinternal
 ****************************************************************************************/
-
-/****************************************************************************************
-* Include files
-****************************************************************************************/
-#include "boot.h"                                /* bootloader generic header          */
-
-
-/************************************************************************************//**
-** \brief     Initializes the bootloader core. 
-** \return    none
-**
-****************************************************************************************/
-void BootInit(void)
-{
-	CopInit();		/* initialize the watchdog */
-	TimerInit();	/* initialize the millisecond timer */
-	NvmInit();		/* initialize the non-volatile memory driver */
-
-#if (BOOT_FILE_SYS_ENABLE > 0)
-	/* initialize the file system module */
-	FileInit();
-#endif
-
-#if (BOOT_COM_ENABLE > 0)
-	/* initialize the communication module */
-	ComInit();
-#endif
-
-	/* initialize the backdoor entry */
-	BackDoorInit();
-} /*** end of BootInit ***/
-
-
-/************************************************************************************//**
-** \brief     Task function of the bootloader core that drives the program. 
-** \return    none
-**
-****************************************************************************************/
-void BootTask(void)
-{
-  /* service the watchdog */
-  CopService();
-  /* update the millisecond timer */
-  TimerUpdate();
-  #if (BOOT_FILE_SYS_ENABLE > 0)
-  /* call worker task for updating firmware from locally attached file storage */
-  FileTask();
-  #endif /* BOOT_FILE_SYS_ENABLE > 0 */
-  #if (BOOT_COM_ENABLE > 0)
-  /* process possibly pending communication data */
-  ComTask();
-  #endif
-  /* control the backdoor */
-  BackDoorCheck();
-} /*** end of BootTask ***/
-
-
-/*********************************** end of boot.c *************************************/

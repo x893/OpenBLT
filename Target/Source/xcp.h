@@ -145,9 +145,9 @@
 * Function prototypes
 ****************************************************************************************/
 void     XcpInit(void);
-blt_bool XcpIsConnected(void);
+bool XcpIsConnected(void);
 void     XcpPacketTransmitted(void);
-void     XcpPacketReceived(blt_int8u *data);
+void     XcpPacketReceived(uint8_t *data);
 
 
 /****************************************************************************************

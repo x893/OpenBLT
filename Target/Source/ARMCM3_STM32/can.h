@@ -37,9 +37,9 @@
 /****************************************************************************************
 * Function prototypes
 ****************************************************************************************/
-void     CanInit(void);
-void     CanTransmitPacket(blt_int8u *data, blt_int8u len);
-blt_bool CanReceivePacket(blt_int8u *data);
+bool	CanInit(void);
+bool	CanTransmitPacket(uint8_t *data, uint8_t len);
+bool	CanReceivePacket(uint8_t *data);
 #endif /* BOOT_COM_CAN_ENABLE > 0 */
 
 

@@ -1,3 +1,50 @@
+#ifndef USB_CONF_H
+#define USB_CONF_H
+
+/****************************************************************************************
+* Macro definitions
+****************************************************************************************/
+/** \brief Total number of used endpoints. */
+#define EP_NUM              (3)
+
+/** \brief Buffer table base address. */
+#define BTABLE_ADDRESS      (0x00)
+
+/** \brief EP0 rx buffer base address. */
+#define ENDP0_RXADDR        (0x40)
+/** \brief EP0 tx buffer base address. */
+#define ENDP0_TXADDR        (0x80)
+/** \brief EP1 rx buffer base address */
+#define ENDP1_RXADDR        (0xC0)
+/** \brief EP1 tx buffer base address */
+#define ENDP1_TXADDR        (0x100)
+
+/** \brief Mask defining which events has to be handled by the device application software. */
+#define IMR_MSK (CNTR_CTRM  | CNTR_SOFM  | CNTR_RESETM )
+
+/** \brief Enable start of frame callback. */
+#define SOF_CALLBACK
+/* CTR service routines associated to defined endpoints. keep EP1_IN and EP1_OUT
+ * callback uncommented to enable them. They are implemented in usb_endp.c
+ */
+/*#define  EP1_IN_Callback   NOP_Process*/
+#define  EP2_IN_Callback   NOP_Process
+#define  EP3_IN_Callback   NOP_Process
+#define  EP4_IN_Callback   NOP_Process
+#define  EP5_IN_Callback   NOP_Process
+#define  EP6_IN_Callback   NOP_Process
+#define  EP7_IN_Callback   NOP_Process
+/*#define  EP1_OUT_Callback   NOP_Process*/
+#define  EP2_OUT_Callback   NOP_Process
+#define  EP3_OUT_Callback   NOP_Process
+#define  EP4_OUT_Callback   NOP_Process
+#define  EP5_OUT_Callback   NOP_Process
+#define  EP6_OUT_Callback   NOP_Process
+#define  EP7_OUT_Callback   NOP_Process
+
+#endif /* USB_CONF_H */
+
+/*********************************** end of usb_conf.h *********************************/
 /************************************************************************************//**
 * \file         Demo\ARMCM3_STM32_Olimex_STM32H103_IAR\Boot\usb_conf.h
 * \brief        Bootloader USB device configuration header file.
@@ -30,47 +77,3 @@
 * 
 * \endinternal
 ****************************************************************************************/
-#ifndef USB_CONF_H
-#define USB_CONF_H
-
-/****************************************************************************************
-* Macro definitions
-****************************************************************************************/
-/** \brief Total number of used endpoints. */
-#define EP_NUM              (3)
-/** \brief Buffer table base address. */
-#define BTABLE_ADDRESS      (0x00)
-/** \brief EP0 rx buffer base address. */
-#define ENDP0_RXADDR        (0x40)
-/** \brief EP0 tx buffer base address. */
-#define ENDP0_TXADDR        (0x80)
-/** \brief EP1 rx buffer base address */
-#define ENDP1_RXADDR        (0xC0)
-/** \brief EP1 tx buffer base address */
-#define ENDP1_TXADDR        (0x100)
-/** \brief Mask defining which events has to be handled by the device application software. */
-#define IMR_MSK (CNTR_CTRM  | CNTR_SOFM  | CNTR_RESETM )
-/** \brief Enable start of frame callback. */
-#define SOF_CALLBACK
-/* CTR service routines associated to defined endpoints. keep EP1_IN and EP1_OUT
- * callback uncommented to enable them. They are implemented in usb_endp.c
- */
-/*#define  EP1_IN_Callback   NOP_Process*/
-#define  EP2_IN_Callback   NOP_Process
-#define  EP3_IN_Callback   NOP_Process
-#define  EP4_IN_Callback   NOP_Process
-#define  EP5_IN_Callback   NOP_Process
-#define  EP6_IN_Callback   NOP_Process
-#define  EP7_IN_Callback   NOP_Process
-/*#define  EP1_OUT_Callback   NOP_Process*/
-#define  EP2_OUT_Callback   NOP_Process
-#define  EP3_OUT_Callback   NOP_Process
-#define  EP4_OUT_Callback   NOP_Process
-#define  EP5_OUT_Callback   NOP_Process
-#define  EP6_OUT_Callback   NOP_Process
-#define  EP7_OUT_Callback   NOP_Process
-
-#endif /* USB_CONF_H */
-
-/*********************************** end of usb_conf.h *********************************/
-

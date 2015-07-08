@@ -508,7 +508,7 @@ void DataStageIn(void)
 
   if ((save_wLength == 0) && (ControlState == LAST_IN_DATA))
   {
-    if(Data_Mul_MaxPacketSize == TRUE)
+    if (Data_Mul_MaxPacketSize == TRUE)
     {
       /* No more data to send and empty packet */
       Send0LengthData();

@@ -38,7 +38,7 @@
 ****************************************************************************************/
 void       TimerInit(void);
 void       TimerUpdate(void);
-blt_int32u TimerGet(void);
+uint32_t TimerGet(void);
 void       TimerReset(void);
 
 

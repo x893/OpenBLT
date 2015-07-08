@@ -11,4 +11,4 @@ USER_STANDARD_REQUESTS User_Standard_Requests;
 void UsbReceivePipeBulkOUT(void) { }
 void UsbTransmitPipeBulkIN(void) { }
 
-#endif
+#endif /* BOOT_COM_USB_ENABLE == 0 */

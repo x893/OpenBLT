@@ -1,3 +1,326 @@
+#include "boot.h"		/* bootloader generic header	*/
+#include "stm32f10x.h"	/* microcontroller registers	*/
+
+
+/****************************************************************************************
+*   U S B   C O M M U N I C A T I O N   I N T E R F A C E   H O O K   F U N C T I O N S
+****************************************************************************************/
+
+#if (BOOT_COM_USB_ENABLE > 0)
+
+/************************************************************************************//**
+** \brief	Callback that gets called whenever the USB device should be connected
+**			to the USB bus. 
+** \param	connect true to connect and false to disconnect.
+** \return	none.
+**
+****************************************************************************************/
+void UsbConnectHook(bool connect)
+{
+	static bool initialized = false;
+
+	/* the connection to the USB bus is typically controlled by software through a digital
+	 * output. the GPIO pin for this must be configured as such.
+	 */
+	if (initialized == false)
+	{
+		/* enable clock for PC11 pin peripheral (GPIOC) */
+		RCC->APB2ENR |= (uint32_t)(0x00000010);
+		/* configure DIS (GPIOC11) as open drain digital output */
+		/* first reset the configuration */
+		GPIOC->CRH &= ~(uint32_t)((uint32_t)0xf << 12);
+		/* CNF11[1:0] = %01 and MODE11[1:0] = %11 */
+		GPIOC->CRH |= (uint32_t)((uint32_t)0x7 << 12);
+		/* set to initialized as this part only has to be done once after reset */
+		initialized = true;
+	}
+	/* determine if the USB should be connected or disconnected */
+	if (connect == true)
+	{
+		/* the GPIO has a pull-up so to connect to the USB bus the pin needs to go low */
+		GPIOC->BRR = (uint32_t)((uint32_t)0x1 << 11);
+	}
+	else
+	{
+		/* the GPIO has a pull-up so to disconnect to the USB bus the pin needs to go high */
+		GPIOC->BSRR = (uint32_t)((uint32_t)0x1 << 11);
+	}
+} /*** end of UsbConnect ***/
+
+
+/************************************************************************************//**
+** \brief	Callback that gets called whenever the USB host requests the device
+**			to enter a low power mode.
+** \return	none.
+**
+****************************************************************************************/
+void UsbEnterLowPowerModeHook(void)
+{
+	/* support to enter a low power mode can be implemented here */
+} /*** end of UsbEnterLowPowerMode ***/
+
+
+/************************************************************************************//**
+** \brief	Callback that gets called whenever the USB host requests the device to
+**			exit low power mode.
+** \return	none.
+**
+****************************************************************************************/
+void UsbLeaveLowPowerModeHook(void)
+{
+  /* support to leave a low power mode can be implemented here */
+} /*** end of UsbLeaveLowPowerMode ***/
+#endif /* BOOT_COM_USB_ENABLE > 0 */
+
+
+/****************************************************************************************
+*   B A C K D O O R   E N T R Y   H O O K   F U N C T I O N S
+****************************************************************************************/
+
+#if (BOOT_BACKDOOR_HOOKS_ENABLE > 0)
+/************************************************************************************//**
+** \brief	Initializes the backdoor entry option.
+** \return	none.
+**
+****************************************************************************************/
+void BackDoorInitHook(void)
+{
+	/* enable clock for PA0 pin peripheral (GPIOA) */
+	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
+
+	/* configure BUT (GPIOA0) as floating digital input */
+	/* CNF0[1:0] = %01 and MODE0[1:0] = %00 */
+	GPIOA->CRL = (GPIOA->CRL & ~((uint32_t)0x0F << (4 * 0))) | ((uint32_t)0x4 << (4 * 0));
+} /*** end of BackDoorInitHook ***/
+
+
+/************************************************************************************//**
+** \brief	Checks if a backdoor entry is requested.
+** \return	true if the backdoor entry is requested, false otherwise.
+**
+****************************************************************************************/
+bool BackDoorEntryHook(void)
+{
+	/* button PA0 has a pullup, so will read high by default. enter backdoor only when
+	 * this button is pressed. this is the case when it reads low */
+
+	if ((GPIOA->IDR & 0x01) == 0)
+	{
+		return true;
+	}
+	return false;
+} /*** end of BackDoorEntryHook ***/
+#endif /* BOOT_BACKDOOR_HOOKS_ENABLE > 0 */
+
+
+/****************************************************************************************
+*   C P U   D R I V E R   H O O K   F U N C T I O N S
+****************************************************************************************/
+
+#if (BOOT_CPU_USER_PROGRAM_START_HOOK > 0)
+/************************************************************************************//**
+** \brief	Callback that gets called when the bootloader is about to exit and
+**			hand over control to the user program. This is the last moment that
+**			some final checking can be performed and if necessary prevent the
+**			bootloader from activiting the user program.
+** \return	true if it is okay to start the user program, false to keep
+**			keep the bootloader active.
+**
+****************************************************************************************/
+bool CpuUserProgramStartHook(void)
+{
+  /* okay to start the user program */
+  return true;
+} /*** end of CpuUserProgramStartHook ***/
+#endif /* BOOT_CPU_USER_PROGRAM_START_HOOK > 0 */
+
+
+/****************************************************************************************
+*   N O N - V O L A T I L E   M E M O R Y   D R I V E R   H O O K   F U N C T I O N S
+****************************************************************************************/
+
+#if (BOOT_NVM_HOOKS_ENABLE > 0)
+/************************************************************************************//**
+** \brief	Callback that gets called at the start of the internal NVM driver
+**			initialization routine. 
+** \return	none.
+**
+****************************************************************************************/
+void NvmInitHook(void)
+{
+} /*** end of NvmInitHook ***/
+
+
+/************************************************************************************//**
+** \brief	Callback that gets called at the start of the NVM driver write 
+**			routine. It allows additional memory to be operated on. If the address
+**			is not within the range of the additional memory, then 
+**			BLT_NVM_NOT_IN_RANGE must be returned to indicate that the data hasn't
+**			been written yet.
+** \param	addr Start address.
+** \param	len  Length in bytes.
+** \param	data Pointer to the data buffer.
+** \return	BLT_NVM_OKAY if successful, BLT_NVM_NOT_IN_RANGE if the address is
+**			not within the supported memory range, or BLT_NVM_ERROR is the write
+**			operation failed.
+**
+****************************************************************************************/
+uint8_t NvmWriteHook(blt_addr addr, uint32_t len, uint8_t *data)
+{
+  return BLT_NVM_NOT_IN_RANGE;
+} /*** end of NvmWriteHook ***/
+
+
+/************************************************************************************//**
+** \brief	Callback that gets called at the start of the NVM driver erase 
+**			routine. It allows additional memory to be operated on. If the address
+**			is not within the range of the additional memory, then
+**			BLT_NVM_NOT_IN_RANGE must be returned to indicate that the memory
+**			hasn't been erased yet.
+** \param	addr Start address.
+** \param	len  Length in bytes.
+** \return	BLT_NVM_OKAY if successful, BLT_NVM_NOT_IN_RANGE if the address is
+**			not within the supported memory range, or BLT_NVM_ERROR is the erase
+**			operation failed.
+**
+****************************************************************************************/
+uint8_t NvmEraseHook(blt_addr addr, uint32_t len)
+{
+  return BLT_NVM_NOT_IN_RANGE;
+} /*** end of NvmEraseHook ***/
+
+
+/************************************************************************************//**
+** \brief	Callback that gets called at the end of the NVM programming session.
+** \return	true is successful, false otherwise.
+**
+****************************************************************************************/
+bool NvmDoneHook(void)
+{
+  return true;
+} /*** end of NvmDoneHook ***/
+#endif /* BOOT_NVM_HOOKS_ENABLE > 0 */
+
+
+#if (BOOT_NVM_CHECKSUM_HOOKS_ENABLE > 0)
+/************************************************************************************//**
+** \brief	Verifies the checksum, which indicates that a valid user program is
+**			present and can be started.
+** \return	true if successful, false otherwise.
+**
+****************************************************************************************/
+bool NvmVerifyChecksumHook(void)
+{
+  return true;
+} /*** end of NvmVerifyChecksum ***/
+
+
+/************************************************************************************//**
+** \brief	Writes a checksum of the user program to non-volatile memory. This is
+**			performed once the entire user program has been programmed. Through
+**			the checksum, the bootloader can check if a valid user programming is
+**			present and can be started.
+** \return	true if successful, false otherwise. 
+**
+****************************************************************************************/
+bool NvmWriteChecksumHook(void)
+{
+	return true;
+}
+#endif /* BOOT_NVM_CHECKSUM_HOOKS_ENABLE > 0 */
+
+
+/****************************************************************************************
+*   W A T C H D O G   D R I V E R   H O O K   F U N C T I O N S
+****************************************************************************************/
+
+#if (BOOT_COP_HOOKS_ENABLE > 0)
+/************************************************************************************//**
+** \brief	Callback that gets called at the end of the internal COP driver
+**			initialization routine. It can be used to configure and enable the
+**			watchdog.
+** \return	none.
+**
+****************************************************************************************/
+void CopInitHook(void)
+{
+} /*** end of CopInitHook ***/
+
+
+/************************************************************************************//**
+** \brief	Callback that gets called at the end of the internal COP driver
+**			service routine. This gets called upon initialization and during
+**			potential long lasting loops and routine. It can be used to service
+**			the watchdog to prevent a watchdog reset.
+** \return	none.
+**
+****************************************************************************************/
+void CopServiceHook(void)
+{
+} /*** end of CopServiceHook ***/
+#endif /* BOOT_COP_HOOKS_ENABLE > 0 */
+
+
+/****************************************************************************************
+*   S E E D / K E Y   S E C U R I T Y   H O O K   F U N C T I O N S
+****************************************************************************************/
+
+#if (BOOT_XCP_SEED_KEY_ENABLE > 0)
+/************************************************************************************//**
+** \brief	Provides a seed to the XCP master that will be used for the key 
+**			generation when the master attempts to unlock the specified resource. 
+**			Called by the GET_SEED command.
+** \param	resource  Resource that the seed if requested for (XCP_RES_XXX).
+** \param	seed      Pointer to byte buffer wher the seed will be stored.
+** \return	Length of the seed in bytes.
+**
+****************************************************************************************/
+uint8_t XcpGetSeedHook(uint8_t resource, uint8_t *seed)
+{
+	/* request seed for unlocking ProGraMming resource */
+	if ((resource & XCP_RES_PGM) != 0)
+	{
+		seed[0] = 0x55;
+	}
+
+	/* return seed length */
+	return 1;
+} /*** end of XcpGetSeedHook ***/
+
+
+/************************************************************************************//**
+** \brief	Called by the UNLOCK command and checks if the key to unlock the 
+**			specified resource was correct. If so, then the resource protection 
+**			will be removed.
+** \param	resource  resource to unlock (XCP_RES_XXX).
+** \param	key       pointer to the byte buffer holding the key.
+** \param	len       length of the key in bytes.
+** \return	1 if the key was correct, 0 otherwise.
+**
+****************************************************************************************/
+uint8_t XcpVerifyKeyHook(uint8_t resource, uint8_t *key, uint8_t len)
+{
+	/* suppress compiler warning for unused parameter */
+	len = len;
+
+	/* the example key algorithm in "FeaserKey.dll" works as follows:
+	 *  - PGM will be unlocked if key = seed - 1
+	 */
+
+	/* check key for unlocking ProGraMming resource */
+	if ((resource == XCP_RES_PGM) && (key[0] == (0x55-1)))
+	{
+		/* correct key received for unlocking PGM resource */
+		return 1;
+	}
+
+	/* still here so key incorrect */
+	return 0;
+} /*** end of XcpVerifyKeyHook ***/
+
+#endif /* BOOT_XCP_SEED_KEY_ENABLE > 0 */
+
+/*********************************** end of hooks.c ************************************/
 /************************************************************************************//**
 * \file         Demo\ARMCM3_STM32_Olimex_STM32H103_IAR\Boot\hooks.c
 * \brief        Bootloader callback source file.
@@ -30,331 +353,3 @@
 * 
 * \endinternal
 ****************************************************************************************/
-
-/****************************************************************************************
-* Include files
-****************************************************************************************/
-#include "boot.h"                                /* bootloader generic header          */
-#include "stm32f10x.h"                           /* microcontroller registers          */
-
-
-/****************************************************************************************
-*   U S B   C O M M U N I C A T I O N   I N T E R F A C E   H O O K   F U N C T I O N S
-****************************************************************************************/
-
-#if (BOOT_COM_USB_ENABLE > 0)
-/************************************************************************************//**
-** \brief     Callback that gets called whenever the USB device should be connected
-**            to the USB bus. 
-** \param     connect BLT_TRUE to connect and BLT_FALSE to disconnect.
-** \return    none.
-**
-****************************************************************************************/
-void UsbConnectHook(blt_bool connect)
-{
-  static blt_bool initialized = BLT_FALSE;
-
-  /* the connection to the USB bus is typically controlled by software through a digital
-   * output. the GPIO pin for this must be configured as such.
-   */
-  if (initialized == BLT_FALSE)
-  {
-    /* enable clock for PC11 pin peripheral (GPIOC) */
-    RCC->APB2ENR |= (blt_int32u)(0x00000010);
-    /* configure DIS (GPIOC11) as open drain digital output */
-    /* first reset the configuration */
-    GPIOC->CRH &= ~(blt_int32u)((blt_int32u)0xf << 12);
-    /* CNF11[1:0] = %01 and MODE11[1:0] = %11 */
-    GPIOC->CRH |= (blt_int32u)((blt_int32u)0x7 << 12);
-    /* set to initialized as this part only has to be done once after reset */
-    initialized = BLT_TRUE;
-  }
-
-  /* determine if the USB should be connected or disconnected */
-  if (connect == BLT_TRUE)
-  {
-    /* the GPIO has a pull-up so to connect to the USB bus the pin needs to go low */
-    GPIOC->BRR = (blt_int32u)((blt_int32u)0x1 << 11);
-  }
-  else
-  {
-    /* the GPIO has a pull-up so to disconnect to the USB bus the pin needs to go high */
-    GPIOC->BSRR = (blt_int32u)((blt_int32u)0x1 << 11);
-  }
-} /*** end of UsbConnect ***/
-
-
-/************************************************************************************//**
-** \brief     Callback that gets called whenever the USB host requests the device
-**            to enter a low power mode.
-** \return    none.
-**
-****************************************************************************************/
-void UsbEnterLowPowerModeHook(void)
-{
-  /* support to enter a low power mode can be implemented here */
-} /*** end of UsbEnterLowPowerMode ***/
-
-
-/************************************************************************************//**
-** \brief     Callback that gets called whenever the USB host requests the device to
-**            exit low power mode.
-** \return    none.
-**
-****************************************************************************************/
-void UsbLeaveLowPowerModeHook(void)
-{
-  /* support to leave a low power mode can be implemented here */
-} /*** end of UsbLeaveLowPowerMode ***/
-#endif /* BOOT_COM_USB_ENABLE > 0 */
-
-
-/****************************************************************************************
-*   B A C K D O O R   E N T R Y   H O O K   F U N C T I O N S
-****************************************************************************************/
-
-#if (BOOT_BACKDOOR_HOOKS_ENABLE > 0)
-/************************************************************************************//**
-** \brief     Initializes the backdoor entry option.
-** \return    none.
-**
-****************************************************************************************/
-void BackDoorInitHook(void)
-{
-	/* enable clock for PA0 pin peripheral (GPIOA) */
-	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
-
-	/* configure BUT (GPIOA0) as floating digital input */
-	/* CNF0[1:0] = %01 and MODE0[1:0] = %00 */
-	GPIOA->CRL = (GPIOA->CRL & ~((uint32_t)0x0F << (4 * 0))) | ((uint32_t)0x4 << (4 * 0));
-} /*** end of BackDoorInitHook ***/
-
-
-/************************************************************************************//**
-** \brief     Checks if a backdoor entry is requested.
-** \return    BLT_TRUE if the backdoor entry is requested, BLT_FALSE otherwise.
-**
-****************************************************************************************/
-blt_bool BackDoorEntryHook(void)
-{
-	/* button PA0 has a pullup, so will read high by default. enter backdoor only when
-	 * this button is pressed. this is the case when it reads low */
-
-	if ((GPIOA->IDR & 0x01) == 0)
-	{
-		return BLT_TRUE;
-	}
-	return BLT_FALSE;
-} /*** end of BackDoorEntryHook ***/
-#endif /* BOOT_BACKDOOR_HOOKS_ENABLE > 0 */
-
-
-/****************************************************************************************
-*   C P U   D R I V E R   H O O K   F U N C T I O N S
-****************************************************************************************/
-
-#if (BOOT_CPU_USER_PROGRAM_START_HOOK > 0)
-/************************************************************************************//**
-** \brief     Callback that gets called when the bootloader is about to exit and
-**            hand over control to the user program. This is the last moment that
-**            some final checking can be performed and if necessary prevent the
-**            bootloader from activiting the user program.
-** \return    BLT_TRUE if it is okay to start the user program, BLT_FALSE to keep
-**            keep the bootloader active.
-**
-****************************************************************************************/
-blt_bool CpuUserProgramStartHook(void)
-{
-  /* okay to start the user program */
-  return BLT_TRUE;
-} /*** end of CpuUserProgramStartHook ***/
-#endif /* BOOT_CPU_USER_PROGRAM_START_HOOK > 0 */
-
-
-/****************************************************************************************
-*   N O N - V O L A T I L E   M E M O R Y   D R I V E R   H O O K   F U N C T I O N S
-****************************************************************************************/
-
-#if (BOOT_NVM_HOOKS_ENABLE > 0)
-/************************************************************************************//**
-** \brief     Callback that gets called at the start of the internal NVM driver
-**            initialization routine. 
-** \return    none.
-**
-****************************************************************************************/
-void NvmInitHook(void)
-{
-} /*** end of NvmInitHook ***/
-
-
-/************************************************************************************//**
-** \brief     Callback that gets called at the start of the NVM driver write 
-**            routine. It allows additional memory to be operated on. If the address
-**            is not within the range of the additional memory, then 
-**            BLT_NVM_NOT_IN_RANGE must be returned to indicate that the data hasn't
-**            been written yet.
-** \param     addr Start address.
-** \param     len  Length in bytes.
-** \param     data Pointer to the data buffer.
-** \return    BLT_NVM_OKAY if successful, BLT_NVM_NOT_IN_RANGE if the address is
-**            not within the supported memory range, or BLT_NVM_ERROR is the write
-**            operation failed.
-**
-****************************************************************************************/
-blt_int8u NvmWriteHook(blt_addr addr, blt_int32u len, blt_int8u *data)
-{
-  return BLT_NVM_NOT_IN_RANGE;
-} /*** end of NvmWriteHook ***/
-
-
-/************************************************************************************//**
-** \brief     Callback that gets called at the start of the NVM driver erase 
-**            routine. It allows additional memory to be operated on. If the address
-**            is not within the range of the additional memory, then
-**            BLT_NVM_NOT_IN_RANGE must be returned to indicate that the memory
-**            hasn't been erased yet.
-** \param     addr Start address.
-** \param     len  Length in bytes.
-** \return    BLT_NVM_OKAY if successful, BLT_NVM_NOT_IN_RANGE if the address is
-**            not within the supported memory range, or BLT_NVM_ERROR is the erase
-**            operation failed.
-**
-****************************************************************************************/
-blt_int8u NvmEraseHook(blt_addr addr, blt_int32u len)
-{
-  return BLT_NVM_NOT_IN_RANGE;
-} /*** end of NvmEraseHook ***/
-
-
-/************************************************************************************//**
-** \brief     Callback that gets called at the end of the NVM programming session.
-** \return    BLT_TRUE is successful, BLT_FALSE otherwise.
-**
-****************************************************************************************/
-blt_bool NvmDoneHook(void)
-{
-  return BLT_TRUE;
-} /*** end of NvmDoneHook ***/
-#endif /* BOOT_NVM_HOOKS_ENABLE > 0 */
-
-
-#if (BOOT_NVM_CHECKSUM_HOOKS_ENABLE > 0)
-/************************************************************************************//**
-** \brief     Verifies the checksum, which indicates that a valid user program is
-**            present and can be started.
-** \return    BLT_TRUE if successful, BLT_FALSE otherwise.
-**
-****************************************************************************************/
-blt_bool NvmVerifyChecksumHook(void)
-{
-  return BLT_TRUE;
-} /*** end of NvmVerifyChecksum ***/
-
-
-/************************************************************************************//**
-** \brief     Writes a checksum of the user program to non-volatile memory. This is
-**            performed once the entire user program has been programmed. Through
-**            the checksum, the bootloader can check if a valid user programming is
-**            present and can be started.
-** \return    BLT_TRUE if successful, BLT_FALSE otherwise. 
-**
-****************************************************************************************/
-blt_bool NvmWriteChecksumHook(void)
-{
-  return BLT_TRUE;
-}
-#endif /* BOOT_NVM_CHECKSUM_HOOKS_ENABLE > 0 */
-
-
-/****************************************************************************************
-*   W A T C H D O G   D R I V E R   H O O K   F U N C T I O N S
-****************************************************************************************/
-
-#if (BOOT_COP_HOOKS_ENABLE > 0)
-/************************************************************************************//**
-** \brief     Callback that gets called at the end of the internal COP driver
-**            initialization routine. It can be used to configure and enable the
-**            watchdog.
-** \return    none.
-**
-****************************************************************************************/
-void CopInitHook(void)
-{
-} /*** end of CopInitHook ***/
-
-
-/************************************************************************************//**
-** \brief     Callback that gets called at the end of the internal COP driver
-**            service routine. This gets called upon initialization and during
-**            potential long lasting loops and routine. It can be used to service
-**            the watchdog to prevent a watchdog reset.
-** \return    none.
-**
-****************************************************************************************/
-void CopServiceHook(void)
-{
-} /*** end of CopServiceHook ***/
-#endif /* BOOT_COP_HOOKS_ENABLE > 0 */
-
-
-/****************************************************************************************
-*   S E E D / K E Y   S E C U R I T Y   H O O K   F U N C T I O N S
-****************************************************************************************/
-
-#if (BOOT_XCP_SEED_KEY_ENABLE > 0)
-/************************************************************************************//**
-** \brief     Provides a seed to the XCP master that will be used for the key 
-**            generation when the master attempts to unlock the specified resource. 
-**            Called by the GET_SEED command.
-** \param     resource  Resource that the seed if requested for (XCP_RES_XXX).
-** \param     seed      Pointer to byte buffer wher the seed will be stored.
-** \return    Length of the seed in bytes.
-**
-****************************************************************************************/
-blt_int8u XcpGetSeedHook(blt_int8u resource, blt_int8u *seed)
-{
-  /* request seed for unlocking ProGraMming resource */
-  if ((resource & XCP_RES_PGM) != 0)
-  {
-    seed[0] = 0x55;
-  }
-
-  /* return seed length */
-  return 1;
-} /*** end of XcpGetSeedHook ***/
-
-
-/************************************************************************************//**
-** \brief     Called by the UNLOCK command and checks if the key to unlock the 
-**            specified resource was correct. If so, then the resource protection 
-**            will be removed.
-** \param     resource  resource to unlock (XCP_RES_XXX).
-** \param     key       pointer to the byte buffer holding the key.
-** \param     len       length of the key in bytes.
-** \return    1 if the key was correct, 0 otherwise.
-**
-****************************************************************************************/
-blt_int8u XcpVerifyKeyHook(blt_int8u resource, blt_int8u *key, blt_int8u len)
-{
-  /* suppress compiler warning for unused parameter */
-  len = len;
-
-  /* the example key algorithm in "FeaserKey.dll" works as follows:
-   *  - PGM will be unlocked if key = seed - 1
-   */
-
-  /* check key for unlocking ProGraMming resource */
-  if ((resource == XCP_RES_PGM) && (key[0] == (0x55-1)))
-  {
-    /* correct key received for unlocking PGM resource */
-    return 1;
-  }
-
-  /* still here so key incorrect */
-  return 0;
-} /*** end of XcpVerifyKeyHook ***/
-#endif /* BOOT_XCP_SEED_KEY_ENABLE > 0 */
-
-
-
-/*********************************** end of hooks.c ************************************/

@@ -1,35 +1,3 @@
-/************************************************************************************//**
-* \file         Demo\ARMCM3_STM32_Olimex_STM32H103_IAR\Boot\blt_conf.h
-* \brief        Bootloader configuration header file.
-* \ingroup      Boot_ARMCM3_STM32_Olimex_STM32H103_IAR
-* \internal
-*----------------------------------------------------------------------------------------
-*                          C O P Y R I G H T
-*----------------------------------------------------------------------------------------
-*   Copyright (c) 2012  by Feaser    http://www.feaser.com    All rights reserved
-*
-*----------------------------------------------------------------------------------------
-*                            L I C E N S E
-*----------------------------------------------------------------------------------------
-* This file is part of OpenBLT. OpenBLT is free software: you can redistribute it and/or
-* modify it under the terms of the GNU General Public License as published by the Free
-* Software Foundation, either version 3 of the License, or (at your option) any later
-* version.
-*
-* OpenBLT is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-* PURPOSE. See the GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License along with OpenBLT.
-* If not, see <http://www.gnu.org/licenses/>.
-*
-* A special exception to the GPL is included to allow you to distribute a combined work 
-* that includes OpenBLT without being obliged to provide the source code for any 
-* proprietary components. The exception text is included at the bottom of the license
-* file <license.html>.
-* 
-* \endinternal
-****************************************************************************************/
 #ifndef BLT_CONF_H
 #define BLT_CONF_H
 
@@ -76,19 +44,21 @@
 	/** \brief Configure number of bytes in the host->target data packet. */
 	#define BOOT_COM_USB_RX_MAX_DATA        (63)
 
-#define BOOT_COM_CAN_ENABLE				(0)
+#define BOOT_COM_CAN_ENABLE				(1)
+	#define BOOT_COM_CAN_CHANNEL_INDEX		0
 	#define BOOT_COM_CAN_BAUDRATE			250000	/* CAN speed 250 000 bps	*/
 	#define BOOT_COM_CAN_TX_MSG_ID			0x700
 	#define BOOT_COM_CAN_TX_MAX_DATA		8
-	#define BOOT_COM_CAN_RX_MSG_ID			0x701
+	#define BOOT_COM_CAN_RX_MSG_ID			0x321
 	#define BOOT_COM_CAN_RX_MAX_DATA		8
-	#define BOOT_COM_CAN_CHANNEL_INDEX		0
 
-#define BOOT_COM_UART_ENABLE			(1)
+#define BOOT_COM_UART_ENABLE			(0)
 	#define BOOT_COM_UART_BAUDRATE			115200
 	#define BOOT_COM_UART_TX_MAX_DATA		64
 	#define BOOT_COM_UART_RX_MAX_DATA		64
 	#define BOOT_COM_UART_CHANNEL_INDEX		1
+
+#define BOOT_LED_ENABLE					(1)
 
 /****************************************************************************************
 *   B A C K D O O R   E N T R Y   C O N F I G U R A T I O N
@@ -160,4 +130,37 @@
 
 
 #endif /* BLT_CONF_H */
+
 /*********************************** end of blt_conf.h *********************************/
+/************************************************************************************//**
+* \file         Demo\ARMCM3_STM32_Olimex_STM32H103_IAR\Boot\blt_conf.h
+* \brief        Bootloader configuration header file.
+* \ingroup      Boot_ARMCM3_STM32_Olimex_STM32H103_IAR
+* \internal
+*----------------------------------------------------------------------------------------
+*                          C O P Y R I G H T
+*----------------------------------------------------------------------------------------
+*   Copyright (c) 2012  by Feaser    http://www.feaser.com    All rights reserved
+*
+*----------------------------------------------------------------------------------------
+*                            L I C E N S E
+*----------------------------------------------------------------------------------------
+* This file is part of OpenBLT. OpenBLT is free software: you can redistribute it and/or
+* modify it under the terms of the GNU General Public License as published by the Free
+* Software Foundation, either version 3 of the License, or (at your option) any later
+* version.
+*
+* OpenBLT is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+* PURPOSE. See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with OpenBLT.
+* If not, see <http://www.gnu.org/licenses/>.
+*
+* A special exception to the GPL is included to allow you to distribute a combined work 
+* that includes OpenBLT without being obliged to provide the source code for any 
+* proprietary components. The exception text is included at the bottom of the license
+* file <license.html>.
+* 
+* \endinternal
+****************************************************************************************/

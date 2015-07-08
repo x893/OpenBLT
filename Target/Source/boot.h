@@ -1,3 +1,55 @@
+#ifndef BOOT_H
+#define BOOT_H
+
+/****************************************************************************************
+* Defines
+****************************************************************************************/
+/** \brief Main version of the bootloader core. */
+#define BOOT_VERSION_CORE_MAIN     (1u)
+/** \brief Minor version of the bootloader core. */
+#define BOOT_VERSION_CORE_MINOR    (1u)
+/** \brief Bufgix version of the bootloader core. */
+#define BOOT_VERSION_CORE_BUGFIX   (0u)
+
+
+/****************************************************************************************
+* Include files
+****************************************************************************************/
+/* Note that it is possible to override the standard blt_conf.h configuration header
+ * file with a project specific one that is defined in the IDE/makefile. For example, 
+ * the following define could be configured: PROJ_BLT_CONF_H="my_boot_config.h". This can
+ * be handy if you use the bootloader in several projects with a different configuration,
+ * and enables you to have just one bootloader source base.
+ */
+#include "types.h"				/* variable types		*/
+#include "assert.h"				/* assertion checks		*/
+#ifdef PROJ_BLT_CONF_H
+	#include PROJ_BLT_CONF_H	/* custom configuration		*/
+#else
+	#include "blt_conf.h"		/* bootloader configuration	*/
+#endif /* PROJ_BLT_CONF_H */
+
+#include "plausibility.h"	/* plausibility checks		*/
+#include "cpu.h"			/* cpu driver module		*/
+#include "cop.h"			/* watchdog driver module	*/
+#include "nvm.h"			/* memory driver module		*/
+#include "timer.h"			/* timer driver module		*/
+#include "backdoor.h"		/* backdoor entry module	*/
+#include "file.h"			/* file system module		*/
+#include "com.h"			/* communication interface	*/
+#include "xcp.h"			/* xcp communication layer	*/
+
+
+/****************************************************************************************
+* Function prototypes
+****************************************************************************************/
+void BootInit(void);
+void BootTask(void);
+
+
+#endif /* BOOT_H */
+
+/*********************************** end of boot.h *************************************/
 /************************************************************************************//**
 * \file         Source\boot.h
 * \brief        Bootloader core module header file.
@@ -30,53 +82,3 @@
 * 
 * \endinternal
 ****************************************************************************************/
-#ifndef BOOT_H
-#define BOOT_H
-
-/****************************************************************************************
-* Defines
-****************************************************************************************/
-/** \brief Main version of the bootloader core. */
-#define BOOT_VERSION_CORE_MAIN     (1u)
-/** \brief Minor version of the bootloader core. */
-#define BOOT_VERSION_CORE_MINOR    (1u)
-/** \brief Bufgix version of the bootloader core. */
-#define BOOT_VERSION_CORE_BUGFIX   (0u)
-
-
-/****************************************************************************************
-* Include files
-****************************************************************************************/
-/* Note that it is possible to override the standard blt_conf.h configuration header
- * file with a project specific one that is defined in the IDE/makefile. For example, 
- * the following define could be configured: PROJ_BLT_CONF_H="my_boot_config.h". This can
- * be handy if you use the bootloader in several projects with a different configuration,
- * and enables you to have just one bootloader source base.
- */
-#include "types.h"                                    /* variable types                */
-#include "assert.h"                                   /* assertion checks              */
-#ifdef PROJ_BLT_CONF_H
-#include PROJ_BLT_CONF_H                              /* custom configuration          */
-#else
-#include "blt_conf.h"                                 /* bootloader configuration      */
-#endif /* PROJ_BLT_CONF_H */
-#include "plausibility.h"                             /* plausibility checks           */
-#include "cpu.h"                                      /* cpu driver module             */
-#include "cop.h"                                      /* watchdog driver module        */
-#include "nvm.h"                                      /* memory driver module          */
-#include "timer.h"                                    /* timer driver module           */
-#include "backdoor.h"                                 /* backdoor entry module         */
-#include "file.h"                                     /* file system module            */
-#include "com.h"                                      /* communication interface       */
-#include "xcp.h"                                      /* xcp communication layer       */
-
-
-/****************************************************************************************
-* Function prototypes
-****************************************************************************************/
-void BootInit(void);
-void BootTask(void);
-
-
-#endif /* BOOT_H */
-/*********************************** end of boot.h *************************************/

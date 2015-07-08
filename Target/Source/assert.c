@@ -1,3 +1,55 @@
+#include "boot.h"	/* bootloader generic header	*/
+
+
+#ifndef NDEBUG
+
+/****************************************************************************************
+* Local data declarations
+****************************************************************************************/
+#if    (defined (__ICCARM__)) /*------------------ ICC Compiler -------------------*/
+	#pragma diag_suppress=Pe550
+#elif defined ( __CC_ARM   ) /*------------------RealView Compiler -----------------*/
+	#pragma push
+	#pragma diag_suppress 550
+#endif
+
+/** \brief Holds the filename in which the assertion occurred. */
+static volatile blt_char  *assert_failure_file;
+/** \brief Holds the linenumber where the assertion occurred. */
+static volatile blt_int32u assert_failure_line;
+
+#if    (defined (__ICCARM__)) /*------------------ ICC Compiler -------------------*/
+	#pragma diag_default=Pe550
+#elif defined ( __CC_ARM   ) /*------------------RealView Compiler -----------------*/
+	#pragma pop
+	#pragma diag_suppress 550
+#endif
+
+
+/************************************************************************************//**
+** \brief	Called when a runtime assertion failed. It stores information about where 
+**			the assertion occurred and halts the software program.
+** \param	file   Name of the source file where the assertion occurred.
+** \param	line   Linenumber in the source file where the assertion occurred.
+** \return	none
+**
+****************************************************************************************/
+void AssertFailure(blt_char *file, blt_int32u line)
+{
+	/* store the file string and line number so that it can be read on a breakpoint*/
+	assert_failure_file = file;
+	assert_failure_line = line;
+	/* hang the software so that it requires a hard reset */
+	for(;;) 
+	{ 
+		/* keep servicing the watchdog so that this one does not cause a reset */
+		CopService(); 
+	}
+} /*** end of AssertFailure ***/
+
+#endif /* !NDEBUG */
+
+/*********************************** end of assert.c ***********************************/
 /************************************************************************************//**
 * \file         Source\assert.c
 * \brief        Bootloader assertion module source file.
@@ -30,58 +82,3 @@
 * 
 * \endinternal
 ****************************************************************************************/
-
-/****************************************************************************************
-* Include files
-****************************************************************************************/
-#include "boot.h"                                /* bootloader generic header          */
-
-
-#ifndef NDEBUG
-/****************************************************************************************
-* Local data declarations
-****************************************************************************************/
-#if    (defined (__ICCARM__)) /*------------------ ICC Compiler -------------------*/
-	#pragma diag_suppress=Pe550
-#elif defined ( __CC_ARM   ) /*------------------RealView Compiler -----------------*/
-	#pragma push
-	#pragma diag_suppress 550
-#endif
-
-/** \brief Holds the filename in which the assertion occurred. */
-static volatile blt_char  *assert_failure_file;
-/** \brief Holds the linenumber where the assertion occurred. */
-static volatile blt_int32u assert_failure_line;
-
-#if    (defined (__ICCARM__)) /*------------------ ICC Compiler -------------------*/
-	#pragma diag_default=Pe550
-#elif defined ( __CC_ARM   ) /*------------------RealView Compiler -----------------*/
-	#pragma pop
-	#pragma diag_suppress 550
-#endif
-
-
-/************************************************************************************//**
-** \brief     Called when a runtime assertion failed. It stores information about where 
-**            the assertion occurred and halts the software program.
-** \param     file   Name of the source file where the assertion occurred.
-** \param     line   Linenumber in the source file where the assertion occurred.
-** \return    none
-**
-****************************************************************************************/
-void AssertFailure(blt_char *file, blt_int32u line)
-{
-	/* store the file string and line number so that it can be read on a breakpoint*/
-	assert_failure_file = file;
-	assert_failure_line = line;
-	/* hang the software so that it requires a hard reset */
-	for(;;) 
-	{ 
-		/* keep servicing the watchdog so that this one does not cause a reset */
-		CopService(); 
-	}
-} /*** end of AssertFailure ***/
-#endif /* !NDEBUG */
-
-
-/*********************************** end of assert.c ***********************************/

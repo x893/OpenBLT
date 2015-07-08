@@ -259,10 +259,10 @@ enum EP_BUF_NUM
     register uint16_t _wRegVal;       \
     _wRegVal = _GetENDPOINT(bEpNum) & EPTX_DTOGMASK;\
     /* toggle first bit ? */     \
-    if((EPTX_DTOG1 & wState)!= 0)      \
+    if ((EPTX_DTOG1 & wState)!= 0)      \
       _wRegVal ^= EPTX_DTOG1;        \
     /* toggle second bit ?  */         \
-    if((EPTX_DTOG2 & wState)!= 0)      \
+    if ((EPTX_DTOG2 & wState)!= 0)      \
       _wRegVal ^= EPTX_DTOG2;        \
     _SetENDPOINT(bEpNum, (_wRegVal | EP_CTR_RX|EP_CTR_TX));    \
   } /* _SetEPTxStatus */
@@ -280,10 +280,10 @@ enum EP_BUF_NUM
     \
     _wRegVal = _GetENDPOINT(bEpNum) & EPRX_DTOGMASK;\
     /* toggle first bit ? */  \
-    if((EPRX_DTOG1 & wState)!= 0) \
+    if ((EPRX_DTOG1 & wState)!= 0) \
       _wRegVal ^= EPRX_DTOG1;  \
     /* toggle second bit ? */  \
-    if((EPRX_DTOG2 & wState)!= 0) \
+    if ((EPRX_DTOG2 & wState)!= 0) \
       _wRegVal ^= EPRX_DTOG2;  \
     _SetENDPOINT(bEpNum, (_wRegVal | EP_CTR_RX|EP_CTR_TX)); \
   } /* _SetEPRxStatus */
@@ -302,16 +302,16 @@ enum EP_BUF_NUM
     \
     _wRegVal = _GetENDPOINT(bEpNum) & (EPRX_DTOGMASK |EPTX_STAT) ;\
     /* toggle first bit ? */  \
-    if((EPRX_DTOG1 & wStaterx)!= 0) \
+    if ((EPRX_DTOG1 & wStaterx)!= 0) \
       _wRegVal ^= EPRX_DTOG1;  \
     /* toggle second bit ? */  \
-    if((EPRX_DTOG2 & wStaterx)!= 0) \
+    if ((EPRX_DTOG2 & wStaterx)!= 0) \
       _wRegVal ^= EPRX_DTOG2;  \
     /* toggle first bit ? */     \
-    if((EPTX_DTOG1 & wStatetx)!= 0)      \
+    if ((EPTX_DTOG1 & wStatetx)!= 0)      \
       _wRegVal ^= EPTX_DTOG1;        \
     /* toggle second bit ?  */         \
-    if((EPTX_DTOG2 & wStatetx)!= 0)      \
+    if ((EPTX_DTOG2 & wStatetx)!= 0)      \
       _wRegVal ^= EPTX_DTOG2;        \
     _SetENDPOINT(bEpNum, _wRegVal | EP_CTR_RX|EP_CTR_TX);    \
   } /* _SetEPRxTxStatus */
@@ -413,9 +413,9 @@ enum EP_BUF_NUM
 * Output         : None.
 * Return         : None.
 *******************************************************************************/
-#define _ClearDTOG_RX(bEpNum)  if((_GetENDPOINT(bEpNum) & EP_DTOG_RX) != 0)\
+#define _ClearDTOG_RX(bEpNum)  if ((_GetENDPOINT(bEpNum) & EP_DTOG_RX) != 0)\
     _ToggleDTOG_RX(bEpNum)
-#define _ClearDTOG_TX(bEpNum)  if((_GetENDPOINT(bEpNum) & EP_DTOG_TX) != 0)\
+#define _ClearDTOG_TX(bEpNum)  if ((_GetENDPOINT(bEpNum) & EP_DTOG_TX) != 0)\
     _ToggleDTOG_TX(bEpNum)
 /*******************************************************************************
 * Macro Name     : SetEPAddress.
@@ -473,21 +473,21 @@ enum EP_BUF_NUM
 *******************************************************************************/
 #define _BlocksOf32(dwReg,wCount,wNBlocks) {\
     wNBlocks = wCount >> 5;\
-    if((wCount & 0x1f) == 0)\
+    if ((wCount & 0x1f) == 0)\
       wNBlocks--;\
     *pdwReg = (uint32_t)((wNBlocks << 10) | 0x8000);\
   }/* _BlocksOf32 */
 
 #define _BlocksOf2(dwReg,wCount,wNBlocks) {\
     wNBlocks = wCount >> 1;\
-    if((wCount & 0x1) != 0)\
+    if ((wCount & 0x1) != 0)\
       wNBlocks++;\
     *pdwReg = (uint32_t)(wNBlocks << 10);\
   }/* _BlocksOf2 */
 
 #define _SetEPCountRxReg(dwReg,wCount)  {\
     uint16_t wNBlocks;\
-    if(wCount > 62){_BlocksOf32(dwReg,wCount,wNBlocks);}\
+    if (wCount > 62){_BlocksOf32(dwReg,wCount,wNBlocks);}\
     else {_BlocksOf2(dwReg,wCount,wNBlocks);}\
   }/* _SetEPCountRxReg */
 
@@ -566,19 +566,19 @@ enum EP_BUF_NUM
 * Return         : None.
 *******************************************************************************/
 #define _SetEPDblBuf0Count(bEpNum, bDir, wCount)  { \
-    if(bDir == EP_DBUF_OUT)\
+    if (bDir == EP_DBUF_OUT)\
       /* OUT endpoint */ \
     {_SetEPRxDblBuf0Count(bEpNum,wCount);} \
-    else if(bDir == EP_DBUF_IN)\
+    else if (bDir == EP_DBUF_IN)\
       /* IN endpoint */ \
       *_pEPTxCount(bEpNum) = (uint32_t)wCount;  \
   } /* SetEPDblBuf0Count*/
 
 #define _SetEPDblBuf1Count(bEpNum, bDir, wCount)  { \
-    if(bDir == EP_DBUF_OUT)\
+    if (bDir == EP_DBUF_OUT)\
       /* OUT endpoint */ \
     {_SetEPRxCount(bEpNum,wCount);}\
-    else if(bDir == EP_DBUF_IN)\
+    else if (bDir == EP_DBUF_IN)\
       /* IN endpoint */\
       *_pEPRxCount(bEpNum) = (uint32_t)wCount; \
   } /* SetEPDblBuf1Count */

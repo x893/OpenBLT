@@ -1,3 +1,21 @@
+#ifndef USB_H
+#define USB_H
+
+#include "boot.h"
+
+#if (BOOT_COM_USB_ENABLE > 0)
+/****************************************************************************************
+* Function prototypes
+****************************************************************************************/
+void UsbInit(void);
+void UsbFree(void);
+bool UsbTransmitPacket(uint8_t *data, uint8_t len);
+bool UsbReceivePacket(uint8_t *data);
+#endif /* BOOT_COM_USB_ENABLE > 0 */
+
+#endif /* USB_H */
+
+/*********************************** end of usb.h **************************************/
 /************************************************************************************//**
 * \file         Source\ARMCM3_STM32\usb.h
 * \brief        Bootloader USB communication interface header file.
@@ -30,19 +48,3 @@
 * 
 * \endinternal
 ****************************************************************************************/
-#ifndef USB_H
-#define USB_H
-
-#if (BOOT_COM_USB_ENABLE > 0)
-/****************************************************************************************
-* Function prototypes
-****************************************************************************************/
-void     UsbInit(void);
-void     UsbFree(void);
-void     UsbTransmitPacket(blt_int8u *data, blt_int8u len);
-blt_bool UsbReceivePacket(blt_int8u *data);
-#endif /* BOOT_COM_USB_ENABLE > 0 */
-
-
-#endif /* USB_H */
-/*********************************** end of usb.h **************************************/

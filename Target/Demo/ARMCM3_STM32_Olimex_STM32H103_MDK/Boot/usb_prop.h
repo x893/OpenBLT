@@ -1,3 +1,43 @@
+#ifndef USB_PROP_H
+#define USB_PROP_H
+
+
+/****************************************************************************************
+* Macro definitions
+****************************************************************************************/
+/* enable the supported and required functions by commenting them out */
+#define Bulk_GetConfiguration          NOP_Process
+
+/*#define Bulk_SetConfiguration          NOP_Process*/
+#define Bulk_GetInterface              NOP_Process
+#define Bulk_SetInterface              NOP_Process
+#define Bulk_GetStatus                 NOP_Process
+#define Bulk_ClearFeature              NOP_Process
+#define Bulk_SetEndPointFeature        NOP_Process
+#define Bulk_SetDeviceFeature          NOP_Process
+/*#define Bulk_SetDeviceAddress          NOP_Process*/
+
+
+/****************************************************************************************
+* Function prototypes
+****************************************************************************************/
+void Bulk_Init(void);
+void Bulk_Reset(void);
+void Bulk_SetConfiguration(void);
+void Bulk_SetDeviceAddress (void);
+void Bulk_Status_In (void);
+void Bulk_Status_Out (void);
+RESULT Bulk_Data_Setup(uint8_t);
+RESULT Bulk_NoData_Setup(uint8_t);
+RESULT Bulk_Get_Interface_Setting(uint8_t Interface, uint8_t AlternateSetting);
+uint8_t *Bulk_GetDeviceDescriptor(uint16_t );
+uint8_t *Bulk_GetConfigDescriptor(uint16_t);
+uint8_t *Bulk_GetStringDescriptor(uint16_t);
+uint8_t *Bulk_GetBulkDescriptor(uint16_t Length);
+
+#endif /* USB_PROP_H */
+
+/*********************************** end of usb_prop.h *********************************/
 /************************************************************************************//**
 * \file         Demo\ARMCM3_STM32_Olimex_STM32H103_IAR\Boot\usb_prop.h
 * \brief        Bootloader USB device properties header file.
@@ -30,42 +70,3 @@
 * 
 * \endinternal
 ****************************************************************************************/
-#ifndef USB_PROP_H
-#define USB_PROP_H
-
-
-/****************************************************************************************
-* Macro definitions
-****************************************************************************************/
-/* enable the supported and required functions by commenting them out */
-#define Bulk_GetConfiguration          NOP_Process
-/*#define Bulk_SetConfiguration          NOP_Process*/
-#define Bulk_GetInterface              NOP_Process
-#define Bulk_SetInterface              NOP_Process
-#define Bulk_GetStatus                 NOP_Process
-#define Bulk_ClearFeature              NOP_Process
-#define Bulk_SetEndPointFeature        NOP_Process
-#define Bulk_SetDeviceFeature          NOP_Process
-/*#define Bulk_SetDeviceAddress          NOP_Process*/
-
-
-/****************************************************************************************
-* Function prototypes
-****************************************************************************************/
-void Bulk_Init(void);
-void Bulk_Reset(void);
-void Bulk_SetConfiguration(void);
-void Bulk_SetDeviceAddress (void);
-void Bulk_Status_In (void);
-void Bulk_Status_Out (void);
-RESULT Bulk_Data_Setup(uint8_t);
-RESULT Bulk_NoData_Setup(uint8_t);
-RESULT Bulk_Get_Interface_Setting(uint8_t Interface, uint8_t AlternateSetting);
-uint8_t *Bulk_GetDeviceDescriptor(uint16_t );
-uint8_t *Bulk_GetConfigDescriptor(uint16_t);
-uint8_t *Bulk_GetStringDescriptor(uint16_t);
-uint8_t *Bulk_GetBulkDescriptor(uint16_t Length);
-#endif /* USB_PROP_H */
-
-/*********************************** end of usb_prop.h *********************************/
-

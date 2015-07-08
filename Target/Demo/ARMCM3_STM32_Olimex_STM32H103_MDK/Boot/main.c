@@ -1,52 +1,17 @@
-/************************************************************************************//**
-* \file         Demo\ARMCM3_STM32_Olimex_STM32H103_IAR\Boot\main.c
-* \brief        Bootloader application source file.
-* \ingroup      Boot_ARMCM3_STM32_Olimex_STM32H103_IAR
-* \internal
-*----------------------------------------------------------------------------------------
-*                          C O P Y R I G H T
-*----------------------------------------------------------------------------------------
-*   Copyright (c) 2012  by Feaser    http://www.feaser.com    All rights reserved
-*
-*----------------------------------------------------------------------------------------
-*                            L I C E N S E
-*----------------------------------------------------------------------------------------
-* This file is part of OpenBLT. OpenBLT is free software: you can redistribute it and/or
-* modify it under the terms of the GNU General Public License as published by the Free
-* Software Foundation, either version 3 of the License, or (at your option) any later
-* version.
-*
-* OpenBLT is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-* PURPOSE. See the GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License along with OpenBLT.
-* If not, see <http://www.gnu.org/licenses/>.
-*
-* A special exception to the GPL is included to allow you to distribute a combined work 
-* that includes OpenBLT without being obliged to provide the source code for any 
-* proprietary components. The exception text is included at the bottom of the license
-* file <license.html>.
-* 
-* \endinternal
-****************************************************************************************/
-
-/****************************************************************************************
-* Include files
-****************************************************************************************/
-#include "boot.h"                                /* bootloader generic header          */
-#include "stm32f10x.h"                           /* microcontroller registers          */
+#include "boot.h"		/* bootloader generic header	*/
+#include "stm32f10x.h"	/* microcontroller registers	*/
 
 
 /****************************************************************************************
 * Function prototypes
 ****************************************************************************************/
 static void Init(void);
+static void LEDon(void);
+static void LEDoff(void);
 
-const char BLPrompt[] = "\r\nBL 1.0\r\n";
-
+const uint8_t CAN_BOOT_PROMPT[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xAA, 0x55};
 /************************************************************************************//**
-** \brief     This is the entry point for the bootloader application and is called 
+** \brief	This is the entry point for the bootloader application and is called 
 **            by the reset interrupt vector after the C-startup routines executed.
 ** \return    none.
 **
@@ -54,8 +19,12 @@ const char BLPrompt[] = "\r\nBL 1.0\r\n";
 int main(void)
 {
 	Init();		/* initialize the microcontroller */
+	LEDon();
+
 	BootInit();	/* initialize the bootloader */
-	ComTransmitPacket((blt_int8u *)&BLPrompt[0], sizeof(BLPrompt) - 1);
+
+	LEDoff();
+	ComTransmitPacket((uint8_t *)&CAN_BOOT_PROMPT[0], sizeof(CAN_BOOT_PROMPT));
 
 	while (1)	/* start the infinite program loop */
 	{
@@ -63,10 +32,27 @@ int main(void)
 	}
 } /*** end of main ***/
 
+/************************************************************************************//**
+** \brief	LED On/Off
+** \return	none.
+**
+****************************************************************************************/
+void LEDon(void)
+{
+#if (BOOT_LED_ENABLE > 0)
+	GPIOA->BSRR = (1 << 5);
+#endif
+}
+void LEDoff(void)
+{
+#if (BOOT_LED_ENABLE > 0)
+	GPIOA->BRR = (1 << 5);
+#endif
+}
 
 /************************************************************************************//**
-** \brief     Initializes the microcontroller. 
-** \return    none.
+** \brief	Initializes the microcontroller. 
+** \return	none.
 **
 ****************************************************************************************/
 static void Init(void)
@@ -143,6 +129,15 @@ static void Init(void)
 	while ((rcc->CFGR & (uint32_t)RCC_CFGR_SWS) != (uint32_t)0x08)
 	{ }
 
+#if (BOOT_LED_ENABLE > 0)
+	rcc->APB2ENR |= RCC_APB2ENR_IOPAEN;
+	/* configure LED on PA5 */
+	/* CNF5[1:0] = %00 and MODE5[1:0] = %10 */
+	GPIOA->CRL = (GPIOA->CRL & ~((uint32_t)0x0F << (4 * 5)))
+					| ((uint32_t)0x02 << (4 * 5));
+	GPIOA->BRR = (1 << 5);
+#endif
+
 #if (BOOT_COM_UART_ENABLE > 0)
 	/* enable clock for USART2 peripheral */
 	rcc->APB1ENR |= RCC_APB1ENR_USART2EN;
@@ -151,31 +146,47 @@ static void Init(void)
 
 	/* configure USART2 Tx (GPIOA2) as alternate function push-pull */
 	/* CNF2[1:0] = %10 and MODE2[1:0] = %11 */
-	GPIOA->CRL = (GPIOA->CRL & ~((uint32_t)0x0F << (4 * 2))) | ((uint32_t)0x0B << (4 * 2));
+	GPIOA->CRL = (GPIOA->CRL & ~((uint32_t)0x0F << (4 * 2)))
+					| ((uint32_t)0x0B << (4 * 2));
 
-	/* configure USART2 Rx (GPIOA3) as alternate function input floating */
+	/* configure USART2 Rx (GPIOA3) as alternate function input pullup */
 	/* first reset the configuration */
 	/* CNF2[1:0] = %01 and MODE2[1:0] = %00 */
-	GPIOA->CRL = (GPIOA->CRL & ~((uint32_t)0x0f << (4 * 3))) | ((uint32_t)0x04 << (4 * 3));
+	GPIOA->BSRR = (1 << 3);
+	GPIOA->CRL = (GPIOA->CRL & ~((uint32_t)0x0F << (4 * 3)))
+					| ((uint32_t)0x08 << (4 * 3));
 #endif
 
 #if (BOOT_COM_CAN_ENABLE > 0)
+
+	/* the current implementation supports CAN1. throw an assertion error in case a 
+	 * different CAN channel is configured.  
+	 */
+	ASSERT_CT(BOOT_COM_CAN_CHANNEL_INDEX == 0);
+
 	/* enable clocks for CAN transmitter and receiver pins (GPIOB and AFIO) */
 	rcc->APB2ENR |= (RCC_APB2ENR_IOPBEN | RCC_APB2ENR_AFIOEN);
 
+	/* enable clocks for CAN controller peripheral */
+	rcc->APB1ENR |= RCC_APB1ENR_CAN1EN;
+
+	/* reset CAN controller peripheral */
+	rcc->APB1RSTR |=  RCC_APB1RSTR_CAN1RST;
+	rcc->APB1RSTR &= ~RCC_APB1RSTR_CAN1RST;
+
 	/* configure CAN Rx (GPIOB8) as alternate function input pull-up */
 	/* CNF8[1:0] = %10 and MODE8[1:0] = %00 */
-	GPIOB->CRH = (GPIOB->CRH & ~((uint32_t)0x0F << (4 * 0))) | ((uint32_t)0x08 << (4 * 0));
+	GPIOB->BSRR = (1 << 8);
+	GPIOB->CRH = (GPIOB->CRH & ~((uint32_t)0x0F << (4 * 0)))
+					| ((uint32_t)0x08 << (4 * 0));
 
 	/* configure CAN Tx (GPIOB9) as alternate function push-pull */
 	/* CNF9[1:0] = %10 and MODE9[1:0] = %11 */
-	GPIOB->CRH = (GPIOB->CRH & ~((uint32_t)0x0F << (4 * 1))) | ((uint32_t)0x0B << (4 * 1));
+	GPIOB->CRH = (GPIOB->CRH & ~((uint32_t)0x0F << (4 * 1)))
+					| ((uint32_t)0x0B << (4 * 1));
 
-	/* remap CAN1 pins to PortB */
+	/* remap CAN1 pins */
 	AFIO->MAPR = (AFIO->MAPR & ~AFIO_MAPR_CAN_REMAP) | AFIO_MAPR_CAN_REMAP_REMAP2;
-
-	/* enable clocks for CAN controller peripheral */
-	rcc->APB1ENR |= RCC_APB1ENR_CAN1EN;
 #endif
 
 #if (BOOT_COM_USB_ENABLE > 0)
@@ -184,7 +195,40 @@ static void Init(void)
 	/* enable the USB clock */
 	rcc->APB1ENR |= RCC_APB1ENR_USBEN;
 #endif
+
 } /*** end of Init ***/
 
 
 /*********************************** end of main.c *************************************/
+/************************************************************************************//**
+* \file         Demo\ARMCM3_STM32_Olimex_STM32H103_IAR\Boot\main.c
+* \brief        Bootloader application source file.
+* \ingroup      Boot_ARMCM3_STM32_Olimex_STM32H103_IAR
+* \internal
+*----------------------------------------------------------------------------------------
+*                          C O P Y R I G H T
+*----------------------------------------------------------------------------------------
+*   Copyright (c) 2012  by Feaser    http://www.feaser.com    All rights reserved
+*
+*----------------------------------------------------------------------------------------
+*                            L I C E N S E
+*----------------------------------------------------------------------------------------
+* This file is part of OpenBLT. OpenBLT is free software: you can redistribute it and/or
+* modify it under the terms of the GNU General Public License as published by the Free
+* Software Foundation, either version 3 of the License, or (at your option) any later
+* version.
+*
+* OpenBLT is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+* PURPOSE. See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with OpenBLT.
+* If not, see <http://www.gnu.org/licenses/>.
+*
+* A special exception to the GPL is included to allow you to distribute a combined work 
+* that includes OpenBLT without being obliged to provide the source code for any 
+* proprietary components. The exception text is included at the bottom of the license
+* file <license.html>.
+* 
+* \endinternal
+****************************************************************************************/

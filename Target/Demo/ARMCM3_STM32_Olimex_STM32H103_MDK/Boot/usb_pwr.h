@@ -1,3 +1,54 @@
+#ifndef USB_PWR_H
+#define USB_PWR_H
+
+
+/****************************************************************************************
+* Type definitions
+****************************************************************************************/
+/** \brief Enumeration of the supported resume states. */
+typedef enum _RESUME_STATE {
+	RESUME_EXTERNAL,
+	RESUME_INTERNAL,
+	RESUME_LATER,
+	RESUME_WAIT,
+	RESUME_START,
+	RESUME_ON,
+	RESUME_OFF,
+	RESUME_ESOF
+} RESUME_STATE;
+
+/** \brief Enumeration of the supported device states. */
+typedef enum _DEVICE_STATE {
+	UNCONNECTED,
+	ATTACHED,
+	POWERED,
+	SUSPENDED,
+	ADDRESSED,
+	CONFIGURED
+} DEVICE_STATE;
+
+
+/****************************************************************************************
+* Function prototypes
+****************************************************************************************/
+void Suspend(void);
+void Resume_Init(void);
+void Resume(RESUME_STATE eResumeSetVal);
+RESULT PowerOn(void);
+RESULT PowerOff(void);
+
+
+/****************************************************************************************
+* External data declarations
+****************************************************************************************/
+/* USB device status */
+extern volatile uint32_t bDeviceState; 
+/* true when suspend is possible */
+extern volatile bool fSuspendEnabled;  
+
+#endif  /* USB_PWR_H*/
+
+/*********************************** end of usb_pwr.h **********************************/
 /************************************************************************************//**
 * \file         Demo\ARMCM3_STM32_Olimex_STM32H103_IAR\Boot\usb_pwr.h
 * \brief        Bootloader USB device power management header file.
@@ -30,56 +81,3 @@
 * 
 * \endinternal
 ****************************************************************************************/
-#ifndef USB_PWR_H
-#define USB_PWR_H
-
-
-/****************************************************************************************
-* Type definitions
-****************************************************************************************/
-/** \brief Enumeration of the supported resume states. */
-typedef enum _RESUME_STATE
-{
-  RESUME_EXTERNAL,
-  RESUME_INTERNAL,
-  RESUME_LATER,
-  RESUME_WAIT,
-  RESUME_START,
-  RESUME_ON,
-  RESUME_OFF,
-  RESUME_ESOF
-} RESUME_STATE;
-
-/** \brief Enumeration of the supported device states. */
-typedef enum _DEVICE_STATE
-{
-  UNCONNECTED,
-  ATTACHED,
-  POWERED,
-  SUSPENDED,
-  ADDRESSED,
-  CONFIGURED
-} DEVICE_STATE;
-
-
-/****************************************************************************************
-* Function prototypes
-****************************************************************************************/
-void Suspend(void);
-void Resume_Init(void);
-void Resume(RESUME_STATE eResumeSetVal);
-RESULT PowerOn(void);
-RESULT PowerOff(void);
-
-
-/****************************************************************************************
-* External data declarations
-****************************************************************************************/
-/* USB device status */
-extern volatile uint32_t bDeviceState; 
-/* true when suspend is possible */
-extern volatile bool fSuspendEnabled;  
-
-#endif  /* USB_PWR_H*/
-
-/*********************************** end of usb_pwr.h **********************************/

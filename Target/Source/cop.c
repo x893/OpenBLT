@@ -1,3 +1,42 @@
+#include "boot.h"	/* bootloader generic header	*/
+
+
+/****************************************************************************************
+* Hook functions
+****************************************************************************************/
+#if (BOOT_COP_HOOKS_ENABLE > 0)
+	extern void CopInitHook(void);
+	extern void CopServiceHook(void);
+#endif
+
+
+/************************************************************************************//**
+** \brief	Watchdog initialization function.
+** \return	none
+**
+****************************************************************************************/
+void CopInit(void)
+{
+#if (BOOT_COP_HOOKS_ENABLE > 0)
+	CopInitHook();
+#endif
+} /*** end of CopInit ***/
+
+
+/************************************************************************************//**
+** \brief	Watchdog service function to prevent the watchdog from timing out.
+** \return	none
+**
+****************************************************************************************/
+void CopService(void)
+{
+#if (BOOT_COP_HOOKS_ENABLE > 0)
+	CopServiceHook();
+#endif
+} /*** end of CopService ***/
+
+
+/*********************************** end of cop.c **************************************/
 /************************************************************************************//**
 * \file         Source\cop.c
 * \brief        Bootloader watchdog module source file.
@@ -30,46 +69,3 @@
 * 
 * \endinternal
 ****************************************************************************************/
-
-/****************************************************************************************
-* Include files
-****************************************************************************************/
-#include "boot.h"                                /* bootloader generic header          */
-
-
-/****************************************************************************************
-* Hook functions
-****************************************************************************************/
-#if (BOOT_COP_HOOKS_ENABLE > 0)
-extern void CopInitHook(void);
-extern void CopServiceHook(void);
-#endif
-
-
-/************************************************************************************//**
-** \brief     Watchdog initialization function.
-** \return    none
-**
-****************************************************************************************/
-void CopInit(void)
-{
-#if (BOOT_COP_HOOKS_ENABLE > 0)
-	CopInitHook();
-#endif
-} /*** end of CopInit ***/
-
-
-/************************************************************************************//**
-** \brief     Watchdog service function to prevent the watchdog from timing out.
-** \return    none
-**
-****************************************************************************************/
-void CopService(void)
-{
-#if (BOOT_COP_HOOKS_ENABLE > 0)
-	CopServiceHook();
-#endif
-} /*** end of CopService ***/
-
-
-/*********************************** end of cop.c **************************************/
