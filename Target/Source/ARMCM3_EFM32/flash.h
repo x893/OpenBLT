@@ -1,3 +1,21 @@
+#ifndef FLASH_H
+#define FLASH_H
+
+/****************************************************************************************
+* Function prototypes
+****************************************************************************************/
+void     FlashInit(void);
+blt_bool FlashWrite(blt_addr addr, blt_int32u len, blt_int8u *data);
+blt_bool FlashErase(blt_addr addr, blt_int32u len);
+blt_bool FlashWriteChecksum(void);
+blt_bool FlashVerifyChecksum(void);
+blt_bool FlashDone(void);
+blt_addr FlashGetUserProgBaseAddress(void);
+
+
+#endif /* FLASH_H */
+
+/*********************************** end of flash.h ************************************/
 /************************************************************************************//**
 * \file         Source\ARMCM3_EFM32\flash.c
 * \brief        Bootloader flash driver source file.
@@ -30,20 +48,3 @@
 * 
 * \endinternal
 ****************************************************************************************/
-#ifndef FLASH_H
-#define FLASH_H
-
-/****************************************************************************************
-* Function prototypes
-****************************************************************************************/
-void     FlashInit(void);
-blt_bool FlashWrite(blt_addr addr, blt_int32u len, blt_int8u *data);
-blt_bool FlashErase(blt_addr addr, blt_int32u len);
-blt_bool FlashWriteChecksum(void);
-blt_bool FlashVerifyChecksum(void);
-blt_bool FlashDone(void);
-blt_addr FlashGetUserProgBaseAddress(void);
-
-
-#endif /* FLASH_H */
-/*********************************** end of flash.h ************************************/

@@ -1,3 +1,19 @@
+#ifndef UART_H
+#define UART_H
+
+#if (BOOT_COM_UART_ENABLE > 0)
+/****************************************************************************************
+* Function prototypes
+****************************************************************************************/
+void     UartInit(void);
+void     UartTransmitPacket(blt_int8u *data, blt_int8u len);
+blt_bool UartReceivePacket(blt_int8u *data);
+#endif /* BOOT_COM_UART_ENABLE > 0 */
+
+
+#endif /* UART_H */
+
+/*********************************** end of uart.h *************************************/
 /************************************************************************************//**
 * \file         Source\ARMCM3_EFM32\uart.h
 * \brief        Bootloader UART communication interface header file.
@@ -30,18 +46,3 @@
 * 
 * \endinternal
 ****************************************************************************************/
-#ifndef UART_H
-#define UART_H
-
-#if (BOOT_COM_UART_ENABLE > 0)
-/****************************************************************************************
-* Function prototypes
-****************************************************************************************/
-void     UartInit(void);
-void     UartTransmitPacket(blt_int8u *data, blt_int8u len);
-blt_bool UartReceivePacket(blt_int8u *data);
-#endif /* BOOT_COM_UART_ENABLE > 0 */
-
-
-#endif /* UART_H */
-/*********************************** end of uart.h *************************************/

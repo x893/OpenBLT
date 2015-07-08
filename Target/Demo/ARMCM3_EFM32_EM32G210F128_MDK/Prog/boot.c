@@ -1,17 +1,62 @@
-#include "boot.h"                                /* bootloader generic header          */
-#include "efm32.h"
-#include "efm32_cmu.h"
-#include "efm32_gpio.h"
-#include "efm32_leuart.h"
+#include "header.h"                                    /* generic header               */
 
-
-#if (BOOT_COM_UART_ENABLE > 0)
 
 /****************************************************************************************
 * Function prototypes
 ****************************************************************************************/
-static blt_bool UartReceiveByte(blt_int8u *data);
-static blt_bool UartTransmitByte(blt_int8u data);
+#if (BOOT_COM_UART_ENABLE > 0)
+static void BootComUartInit(void);
+static void BootComUartCheckActivationRequest(void);
+#endif
+
+/************************************************************************************//**
+** \brief     Initializes the communication interface.
+** \return    none.
+**
+****************************************************************************************/
+void BootComInit(void)
+{
+#if (BOOT_COM_UART_ENABLE > 0)
+  BootComUartInit();
+#endif
+} /*** end of BootComInit ***/
+
+
+/************************************************************************************//**
+** \brief     Receives the CONNECT request from the host, which indicates that the
+**            bootloader should be activated and, if so, activates it.
+** \return    none.
+**
+****************************************************************************************/
+void BootComCheckActivationRequest(void)
+{
+#if (BOOT_COM_UART_ENABLE > 0)
+  BootComUartCheckActivationRequest();
+#endif
+} /*** end of BootComCheckActivationRequest ***/
+
+
+/************************************************************************************//**
+** \brief     Bootloader activation function.
+** \return    none.
+**
+****************************************************************************************/
+void BootActivate(void)
+{
+  /* perform software reset to activate the bootoader again */
+  NVIC_SystemReset();
+} /*** end of BootActivate ***/
+
+
+#if (BOOT_COM_UART_ENABLE > 0)
+/****************************************************************************************
+*     U N I V E R S A L   A S Y N C H R O N O U S   R X   T X   I N T E R F A C E
+****************************************************************************************/
+
+/****************************************************************************************
+* Function prototypes
+****************************************************************************************/
+static unsigned char UartReceiveByte(unsigned char *data);
 
 
 /************************************************************************************//**
@@ -19,14 +64,10 @@ static blt_bool UartTransmitByte(blt_int8u data);
 ** \return    none.
 **
 ****************************************************************************************/
-void UartInit(void)
+static void BootComUartInit(void)
 {
   LEUART_Init_TypeDef init = LEUART_INIT_DEFAULT;
 
-  /* currently, only LEUART1 is supported */
-  ASSERT_CT(BOOT_COM_UART_CHANNEL_INDEX == 1);
-  /* max baudrate for LEUART is 9600 bps */
-  ASSERT_CT(BOOT_COM_UART_BAUDRATE <= 9600);
   /* configure GPIO pins */
   CMU_ClockEnable(cmuClock_GPIO, true);
   /* to avoid false start, configure output as high */
@@ -50,71 +91,38 @@ void UartInit(void)
   LEUART_IntClear(LEUART1, LEUART_IF_RXDATAV);
   /* finally enable it */
   LEUART_Enable(LEUART1, leuartEnable);
-} /*** end of UartInit ***/
+} /*** end of BootUartComInit ***/
 
 
 /************************************************************************************//**
-** \brief     Transmits a packet formatted for the communication interface.
-** \param     data Pointer to byte array with data that it to be transmitted.
-** \param     len  Number of bytes that are to be transmitted.
+** \brief     Receives the CONNECT request from the host, which indicates that the
+**            bootloader should be activated and, if so, activates it.
 ** \return    none.
 **
 ****************************************************************************************/
-void UartTransmitPacket(blt_int8u *data, blt_int8u len)
+static void BootComUartCheckActivationRequest(void)
 {
-  blt_int16u data_index;
-  blt_bool result;
-
-  /* verify validity of the len-paramenter */
-  ASSERT_RT(len <= BOOT_COM_UART_TX_MAX_DATA);  
-
-  /* first transmit the length of the packet */  
-  result = UartTransmitByte(len);
-  ASSERT_RT(result == BLT_TRUE);  
-  
-  /* transmit all the packet bytes one-by-one */
-  for (data_index = 0; data_index < len; data_index++)
-  {
-    /* keep the watchdog happy */
-    CopService();
-    /* write byte */
-    result = UartTransmitByte(data[data_index]);
-    ASSERT_RT(result == BLT_TRUE);  
-  }
-} /*** end of UartTransmitPacket ***/
-
-
-/************************************************************************************//**
-** \brief     Receives a communication interface packet if one is present.
-** \param     data Pointer to byte array where the data is to be stored.
-** \return    BLT_TRUE if a packet was received, BLT_FALSE otherwise.
-**
-****************************************************************************************/
-blt_bool UartReceivePacket(blt_int8u *data)
-{
-  static blt_int8u xcpCtoReqPacket[BOOT_COM_UART_RX_MAX_DATA+1];  /* one extra for length */
-  static blt_int8u xcpCtoRxLength;
-  static blt_bool  xcpCtoRxInProgress = BLT_FALSE;
+  static unsigned char xcpCtoReqPacket[BOOT_COM_UART_RX_MAX_DATA+1];
+  static unsigned char xcpCtoRxLength;
+  static unsigned char xcpCtoRxInProgress = 0;
 
   /* start of cto packet received? */
-  if (xcpCtoRxInProgress == BLT_FALSE)
+  if (xcpCtoRxInProgress == 0)
   {
     /* store the message length when received */
-    if (UartReceiveByte(&xcpCtoReqPacket[0]) == BLT_TRUE)
+    if (UartReceiveByte(&xcpCtoReqPacket[0]) == 1)
     {
-      if (xcpCtoReqPacket[0] > 0)
-      {
-        /* indicate that a cto packet is being received */
-        xcpCtoRxInProgress = BLT_TRUE;
-        /* reset packet data count */
-        xcpCtoRxLength = 0;
-      }
+      /* indicate that a cto packet is being received */
+      xcpCtoRxInProgress = 1;
+
+      /* reset packet data count */
+      xcpCtoRxLength = 0;
     }
   }
   else
   {
     /* store the next packet byte */
-    if (UartReceiveByte(&xcpCtoReqPacket[xcpCtoRxLength+1]) == BLT_TRUE)
+    if (UartReceiveByte(&xcpCtoReqPacket[xcpCtoRxLength+1]) == 1)
     {
       /* increment the packet data count */
       xcpCtoRxLength++;
@@ -122,77 +130,47 @@ blt_bool UartReceivePacket(blt_int8u *data)
       /* check to see if the entire packet was received */
       if (xcpCtoRxLength == xcpCtoReqPacket[0])
       {
-        /* copy the packet data */
-        CpuMemCopy((blt_int32u)data, (blt_int32u)&xcpCtoReqPacket[1], xcpCtoRxLength);        
         /* done with cto packet reception */
-        xcpCtoRxInProgress = BLT_FALSE;
+        xcpCtoRxInProgress = 0;
 
-        /* packet reception complete */
-        return BLT_TRUE;
+        /* check if this was an XCP CONNECT command */
+        if ((xcpCtoReqPacket[1] == 0xff) && (xcpCtoReqPacket[2] == 0x00))
+        {
+          /* connection request received so start the bootloader */
+          BootActivate();
+        }
       }
     }
   }
-  /* packet reception not yet complete */
-  return BLT_FALSE;
-} /*** end of UartReceivePacket ***/
+} /*** end of BootComUartCheckActivationRequest ***/
 
 
 /************************************************************************************//**
 ** \brief     Receives a communication interface byte if one is present.
 ** \param     data Pointer to byte where the data is to be stored.
-** \return    BLT_TRUE if a byte was received, BLT_FALSE otherwise.
+** \return    1 if a byte was received, 0 otherwise.
 **
 ****************************************************************************************/
-static blt_bool UartReceiveByte(blt_int8u *data)
+static unsigned char UartReceiveByte(unsigned char *data)
 {
-  blt_bool result = BLT_FALSE;
-
   /* check to see if a new bytes was received */
   if ((LEUART1->IF & LEUART_IF_RXDATAV) != 0)
   {
     /* store the received data byte and set return value to positive */
     *data = LEUART_Rx(LEUART1);
-    result = BLT_TRUE;
+    return 1;
   }
-  /* inform caller about the result */
-  return result;
+  /* still here to no new byte received */
+  return 0;
 } /*** end of UartReceiveByte ***/
-
-
-/************************************************************************************//**
-** \brief     Transmits a communication interface byte.
-** \param     data Value of byte that is to be transmitted.
-** \return    BLT_TRUE if the byte was transmitted, BLT_FALSE otherwise.
-**
-****************************************************************************************/
-static blt_bool UartTransmitByte(blt_int8u data)
-{
-  /* check if tx holding register can accept new data */
-  if ((LEUART1->STATUS & LEUART_STATUS_TXBL) == 0)
-  {
-    /* UART not ready. should not happen */
-    return BLT_FALSE;
-  }
-  /* write byte to transmit holding register */
-  LEUART_Tx(LEUART1, data);
-  /* wait for tx holding register to be empty */
-  while((LEUART1->STATUS & LEUART_STATUS_TXBL) == 0) 
-  { 
-    /* keep the watchdog happy */
-    CopService();
-  }
-  /* byte transmitted */
-  return BLT_TRUE;
-} /*** end of UartTransmitByte ***/
-
 #endif /* BOOT_COM_UART_ENABLE > 0 */
 
 
-/*********************************** end of uart.c *************************************/
+/*********************************** end of boot.c *************************************/
 /************************************************************************************//**
-* \file         Source\ARMCM3_EFM32\uart.c
-* \brief        Bootloader UART communication interface source file.
-* \ingroup      Target_ARMCM3_EFM32
+* \file         Demo\ARMCM3_EFM32_Olimex_EM32G880F128STK_IAR\Prog\boot.c
+* \brief        Demo program bootloader interface source file.
+* \ingroup      Prog_ARMCM3_EFM32_Olimex_EM32G880F128STK_IAR
 * \internal
 *----------------------------------------------------------------------------------------
 *                          C O P Y R I G H T

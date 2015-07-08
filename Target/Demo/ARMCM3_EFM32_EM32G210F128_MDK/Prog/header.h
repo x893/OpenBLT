@@ -1,22 +1,28 @@
-#ifndef CPU_H
-#define CPU_H
-
+#ifndef HEADER_H
+#define HEADER_H
 
 /****************************************************************************************
-* Function prototypes
+* Include files
 ****************************************************************************************/
-void CpuStartUserProgram(void);
-void CpuMemCopy(blt_addr dest, blt_addr src, blt_int16u len);
-void CpuReset(void);
+#include "../Boot/blt_conf.h"                          /* bootloader configuration     */
+#include "efm32.h"                                     /* EFM32 registers              */
+#include "efm32_chip.h"                                /* EFM32 chip initialization    */
+#include "efm32_cmu.h"                                 /* EFM32 clock management       */
+#include "efm32_gpio.h"                                /* EFM32 GPIO management        */
+#include "efm32_leuart.h"                              /* EFM32 LEUART management      */
+#include "boot.h"                                      /* bootloader interface driver  */
+#include "irq.h"                                       /* IRQ driver                   */
+#include "led.h"                                       /* LED driver                   */
+#include "timer.h"                                     /* Timer driver                 */
 
 
-#endif /* CPU_H */
+#endif /* HEADER_H */
 
-/*********************************** end of cpu.h **************************************/
+/*********************************** end of header.h ***********************************/
 /************************************************************************************//**
-* \file         Source\ARMCM3_EFM32\cpu.h
-* \brief        Bootloader cpu module header file.
-* \ingroup      Target_ARMCM3_EFM32
+* \file         Demo\ARMCM3_EFM32_Olimex_EM32G880F128STK_IAR\Prog\header.h
+* \brief        Generic header file.
+* \ingroup      Prog_ARMCM3_EFM32_Olimex_EM32G880F128STK_IAR
 * \internal
 *----------------------------------------------------------------------------------------
 *                          C O P Y R I G H T

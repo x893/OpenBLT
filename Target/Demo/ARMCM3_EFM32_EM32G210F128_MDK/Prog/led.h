@@ -1,22 +1,26 @@
-#ifndef CPU_H
-#define CPU_H
+#ifndef LED_H
+#define LED_H
+
+/****************************************************************************************
+* Include files
+****************************************************************************************/
+#include "lcdcontroller.h"
 
 
 /****************************************************************************************
 * Function prototypes
 ****************************************************************************************/
-void CpuStartUserProgram(void);
-void CpuMemCopy(blt_addr dest, blt_addr src, blt_int16u len);
-void CpuReset(void);
+void LedInit(void);
+void LedToggle(void);
 
 
-#endif /* CPU_H */
+#endif /* LED_H */
 
-/*********************************** end of cpu.h **************************************/
+/*********************************** end of led.h **************************************/
 /************************************************************************************//**
-* \file         Source\ARMCM3_EFM32\cpu.h
-* \brief        Bootloader cpu module header file.
-* \ingroup      Target_ARMCM3_EFM32
+* \file         Demo\ARMCM3_EFM32_Olimex_EM32G880F128STK_IAR\Prog\led.h
+* \brief        LED driver header file.
+* \ingroup      Prog_ARMCM3_EFM32_Olimex_EM32G880F128STK_IAR
 * \internal
 *----------------------------------------------------------------------------------------
 *                          C O P Y R I G H T

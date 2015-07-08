@@ -1,41 +1,65 @@
-#ifndef NVM_H
-#define NVM_H
-
-/****************************************************************************************
-* Include files
-****************************************************************************************/
-#include "flash.h"                                     /* LPC2xxx flash driver         */
+#include "header.h"                                    /* generic header               */
 
 
 /****************************************************************************************
-* Function prototypes
+* Local data definitions
 ****************************************************************************************/
-void     NvmInit(void);
-blt_bool NvmWrite(blt_addr addr, blt_int32u len, blt_int8u *data);
-blt_bool NvmErase(blt_addr addr, blt_int32u len);
-blt_bool NvmVerifyChecksum(void);
-blt_bool NvmDone(void);
+/** \brief Interrupt nesting counter. Used for global interrupt en/disable. */
+static unsigned char interruptNesting = 0;
 
 
-/****************************************************************************************
-* Macro definitions
-****************************************************************************************/
-/* return codes for hook function NvmWrite/Erase */
-/** \brief Return code for success. */
-#define BLT_NVM_ERROR                   (0x00)
-/** \brief Return code for error. */
-#define BLT_NVM_OKAY                    (0x01)
-/** \brief Return code for not in range. */
-#define BLT_NVM_NOT_IN_RANGE            (0x02)
-
-
-#endif /* NVM_H */
-
-/*********************************** end of nvm.h **************************************/
 /************************************************************************************//**
-* \file         Source\ARMCM3_EFM32\nvm.h
-* \brief        Bootloader non-volatile memory driver header file.
-* \ingroup      Target_ARMCM3_EFM32
+** \brief     Enables the generation IRQ interrupts. Typically called once during
+**            software startup after completion of the initialization.
+** \return    none.
+**
+****************************************************************************************/
+void IrqInterruptEnable(void)
+{
+  __enable_irq();
+} /*** end of IrqInterruptEnable ***/
+
+
+/************************************************************************************//**
+** \brief     Disables the generation IRQ interrupts and stores information on
+**            whether or not the interrupts were already disabled before explicitly
+**            disabling them with this function. Normally used as a pair together
+**            with IrqInterruptRestore during a critical section.
+** \return    none.
+**
+****************************************************************************************/
+void IrqInterruptDisable(void)
+{
+  if (interruptNesting == 0)
+  {
+    __disable_irq();
+  }
+  interruptNesting++;
+} /*** end of IrqInterruptDisable ***/
+
+
+/************************************************************************************//**
+** \brief     Restore the generation IRQ interrupts to the setting it had prior to
+**            calling IrqInterruptDisable. Normally used as a pair together with
+**            IrqInterruptDisable during a critical section.
+** \return    none.
+**
+****************************************************************************************/
+void IrqInterruptRestore(void)
+{
+  interruptNesting--;
+  if (interruptNesting == 0)
+  {
+    __enable_irq();
+  }
+} /*** end of IrqInterruptRestore ***/
+
+
+/*********************************** end of irq.c **************************************/
+/************************************************************************************//**
+* \file         Demo\ARMCM3_EFM32_Olimex_EM32G880F128STK_IAR\Prog\irq.c
+* \brief        IRQ driver source file.
+* \ingroup      Prog_ARMCM3_EFM32_Olimex_EM32G880F128STK_IAR
 * \internal
 *----------------------------------------------------------------------------------------
 *                          C O P Y R I G H T
